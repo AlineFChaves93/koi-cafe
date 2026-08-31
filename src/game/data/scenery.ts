@@ -17,7 +17,6 @@ export const SCENERY: SceneryItem[] = [
   { id: "cerca-esq", src: "/assets/scenery/bamboo-fence.png", x: 19.22, y: 8.64, w: 70.75, flat: 0.996, wmax: 1358, label: "Cerca do canto esquerdo", price: 30, req: 2, thumb: "/assets/scenery/thumbs/cerca-esq.png" },
   { id: "ponte", src: "/assets/scenery/bridge.png", x: 48.19, y: 5.05, w: 54.91, flat: 0.98, wmax: 1054, label: "Ponte vermelha", price: 60, req: 6, thumb: "/assets/scenery/thumbs/ponte.png" },
   { id: "arvore", src: "/assets/scenery/maple.webp", x: 2.07, y: -7.5, w: 61.53, flat: 1.025, wmax: 1181, wind: true, origin: "40% 95%", label: "Árvore de outono", price: 50, req: 4, thumb: "/assets/scenery/thumbs/arvore.png" },
-  { id: "pedra-arvore", src: "/assets/scenery/tree-rock.png", x: 8.2, y: 55.8, w: 12.5, flat: 0.9, wmax: 240, z: 4, hide: true, bundle: "arvore", label: "Pedra da árvore", price: 50, req: 4, thumb: "/assets/scenery/thumbs/arvore.png" },
   { id: "tablado", src: "/assets/scenery/dock.png", x: 96.88, y: 32.48, w: 52.56, flat: 0.997, wmax: 1009, label: "Tablado de madeira", price: 40, req: 3, thumb: "/assets/scenery/thumbs/tablado.png" },
   { id: "fonte-bambu", src: "/assets/scenery/waterfall.png", x: 80.79, y: 17.42, w: 64.71, wmax: 1242, fx: "stream", label: "Fonte de bambu", price: 80, req: 5, thumb: "/assets/scenery/thumbs/fonte-bambu.png" },
   { id: "samambaia-a", src: "/assets/scenery/fern.png", x: 13.5, y: 50, w: 24, wmax: 460, z: 4, label: "Samambaia alta", price: 15, req: 0, thumb: "/assets/scenery/thumbs/samambaia-a.png" },
