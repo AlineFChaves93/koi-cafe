@@ -4,8 +4,10 @@ import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const inputDirectory = path.join(projectRoot, "public/koi/variants");
-const outputDirectory = path.join(projectRoot, "public/koi/normalized");
+// Raw artist sheets live outside the app repo (art-src); only the normalized
+// atlases ship with the game.
+const inputDirectory = path.join(projectRoot, "../art-src/packs/koi-raw/variants");
+const outputDirectory = path.join(projectRoot, "public/assets/koi");
 
 const atlases = [
   { filename: "platinum-ogon.png", sourceColumns: 12, expectedFrames: [8, 6, 12, 12, 12, 12] },

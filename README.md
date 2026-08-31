@@ -1,100 +1,101 @@
-# vinext-starter
+# Koi Café
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+Um jogo 2D de alimentar carpas visto de cima: mire perto de um peixe para
+alimentar só ele, cresça o cardume, colecione espécies e monte o lago na Loja
+do Lago.
 
-## Prerequisites
+**Arquitetura: jogo primeiro.** O mundo (peixes, ração, cenário, plataforma,
+água) roda em [Phaser 3](https://phaser.io) dentro de `src/game/`; o React é
+apenas uma casca fina de HUD/menus em `src/ui/`. A camada de simulação é
+TypeScript puro, sem engine, e roda em testes unitários.
 
-- Node.js `>=22.13.0`
-
-## Quick Start
+## Rodando
 
 ```bash
 npm install
-npm run dev
-npm run build
+npm run dev        # vite dev server
+npm test           # vitest (economia, save, simulação)
+npm run lint
+npm run build      # dist/ estático (deployável em qualquer host estático)
 ```
 
-This starter does not use `wrangler.jsonc`.
+Flags de desenvolvimento: `?autostart` pula a intro, `?cenacompleta` monta o
+lago com todas as peças. Hooks de debug no console: `__koiFish()` (estado do
+cardume) e `__koiStep(dt)` (avança a simulação manualmente).
 
-## Included Shape
+## Mapa do código
 
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
-
-## Workspace Auth Headers
-
-Signed-in visitors receive both `oai-authenticated-user-id` and `oai-authenticated-user-email`. Private Sites require every visitor to sign in; public Sites may also have anonymous visitors, for whom neither header is present.
-
-The user ID is stable for the same user on the same Site and different across Sites. Email and name are intended for display or contact purposes.
-
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
-
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const userId = requestHeaders.get("oai-authenticated-user-id");
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
+```
+src/
+├── game/
+│   ├── data/         conteúdo como DADOS, não constantes enterradas no código
+│   │   ├── variants.ts     espécies de koi (atlases em public/assets/koi/)
+│   │   ├── animations.ts   grade 12×6 dos atlases + linhas/fps por animação
+│   │   ├── scenery.ts      catálogo da Loja do Lago + leiaute percentual
+│   │   └── economy.ts      preços, estágios, carteira, planos da loja
+│   ├── systems/      PURE TS — proibido importar phaser (regra no ESLint)
+│   │   ├── fishSim.ts      boids/steering, seek de ração, colisões (o tick)
+│   │   ├── feeding.ts      geometria do arremesso, scatter, doença
+│   │   ├── economy.ts      regras puras de progressão (testadas)
+│   │   ├── save.ts         save v4 versionado + migração do v3
+│   │   └── actions.ts      handlers dos comandos (tudo que o jogador faz)
+│   ├── state/GameState.ts  dono único do estado do jogador + persistência
+│   ├── events.ts           barramento tipado: comandos (UI→jogo), eventos (jogo→UI)
+│   ├── scenes/             BootScene (manifesto/assets/anims) e PondScene (mundo)
+│   └── entities/           views: KoiView, PelletView, SceneryPiece, BoyView, WaterLayer
+└── ui/               overlay React: GameShell, TopBar, BottomConsole, FishCard,
+                      ShopTray, StoreModal, Intro + ui.css
 ```
 
-## Optional Dispatch-Owned ChatGPT Sign-In
+Fluxo de dados em uma direção: a UI emite **comandos** (`gameBus.commands`),
+os handlers em `systems/actions.ts` mutam o mundo puro + o `GameState`, e o
+jogo emite **eventos** (`gameBus.events`) de volta para a UI. A simulação
+nunca toca React/DOM; a cena drena a fila `world.events` após cada tick.
 
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
+## Como fazer coisas
 
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
+**Adicionar uma espécie de koi:** soloque o atlas normalizado (12 colunas ×
+6 linhas; linhas = swim/fast/idle/turn/bob/eat) em `public/assets/koi/`,
+adicione uma entrada em `data/variants.ts` e — se a folha fonte tiver menos
+quadros por linha — ajuste `SHORT_ROWS` em `data/animations.ts`. Se a arte
+bruta ainda não estiver normalizada, rode `npm run sprites:normalize`
+(fontes em `../art-src/packs/koi-raw/variants`).
 
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
+**Adicionar uma peça de cenário:** soloque a arte em
+`public/assets/scenery/` (+ miniatura em `thumbs/`) e adicione uma entrada em
+`data/scenery.ts` com posição percentual (`x`, `y`, `w`), preço (`price`) e
+requisito de coleção (`req`). Efeitos: `fx: "stream"` (fonte) ou `"pipe"`
+(bacia com ciclo de quadros), `floaty`/`sway`/`wind` para movimento.
 
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
+**Ajustar a economia:** tudo em `data/economy.ts` (preços, estágios, valores
+de crescimento, recompensas diárias, planos da loja). As regras puras em
+`systems/economy.ts` têm testes — mudou o valor, atualize o teste.
 
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
+**Save:** `koi-cafe-player-v4` no localStorage (peixes nomeados
+`{variant, progress, sick}`, cenário comprado, carteira). O v3 legado
+(arranjos posicionais) é migrado automaticamente no primeiro carregamento.
 
-## Useful Commands
+## Assets e arte-fonte
 
-- `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
-- `npm run db:generate`: generate Drizzle migrations after schema changes
+`public/assets/` contém só o que o jogo serve (~17 MB). Matéria-prima e
+pacotes não usados ficam fora do app, no workspace do projeto:
 
-## Learn More
+```
+../art-src/    illustrator/ (.ai) · separated/ (peças cortadas) · packs/ (pond,
+               pond3d, characters, koi-raw) · mockups/
+../tools/      pipelines python (extract/match/process-scenery)
+../archive/    exports antigos, screenshots de referência visual
+```
 
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+Convenção de nomes: kebab-case em inglês, sem espaços/acentos; quadros de
+animação como `frame-01.png…`.
+
+## Notas de fidelidade da migração (canvas → Phaser)
+
+- Animações dos koi usam `yoyo` para replicar o pingue-pongue antigo; o
+  cross-fade entre quadros adjacentes do canvas original foi abandonado.
+- O jato da fonte de bambu é uma textura procedural com pulso de alfa (o CSS
+  animava background-position) — polir contra os screenshots em
+  `../archive/app-outputs/` se necessário.
+- Atlases com linhas curtas (kohaku/sanke) agora tocam só os quadros com
+  sprite — antes piscava uma célula vazia no fim da linha.
