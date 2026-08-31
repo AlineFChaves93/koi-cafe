@@ -1,0 +1,348 @@
+{
+  "name": "koi_pond_3d_game_assets",
+  "source_sheet": "a_clean_png_style_asset_sheet_on_a_transparent_bac.png",
+  "static_asset_count": 67,
+  "static_assets": [
+    {
+      "category": "lilypads",
+      "name": "lilypad_large_01",
+      "file": "lilypads/lilypad_large_01.png"
+    },
+    {
+      "category": "lilypads",
+      "name": "lilypad_large_02",
+      "file": "lilypads/lilypad_large_02.png"
+    },
+    {
+      "category": "lilypads",
+      "name": "lilypad_medium_01",
+      "file": "lilypads/lilypad_medium_01.png"
+    },
+    {
+      "category": "lilypads",
+      "name": "lilypad_small_cluster_01",
+      "file": "lilypads/lilypad_small_cluster_01.png"
+    },
+    {
+      "category": "lilypads",
+      "name": "lilypad_small_01",
+      "file": "lilypads/lilypad_small_01.png"
+    },
+    {
+      "category": "lilypads",
+      "name": "lilypad_stem_01",
+      "file": "lilypads/lilypad_stem_01.png"
+    },
+    {
+      "category": "lilypads",
+      "name": "lilypad_stem_02",
+      "file": "lilypads/lilypad_stem_02.png"
+    },
+    {
+      "category": "lilypads",
+      "name": "lilypad_cluster_01",
+      "file": "lilypads/lilypad_cluster_01.png"
+    },
+    {
+      "category": "lilypads",
+      "name": "lilypad_cluster_02",
+      "file": "lilypads/lilypad_cluster_02.png"
+    },
+    {
+      "category": "lotus",
+      "name": "lotus_pink_large_01",
+      "file": "lotus/lotus_pink_large_01.png"
+    },
+    {
+      "category": "lotus",
+      "name": "lotus_bud_01",
+      "file": "lotus/lotus_bud_01.png"
+    },
+    {
+      "category": "lotus",
+      "name": "lotus_pink_pad_01",
+      "file": "lotus/lotus_pink_pad_01.png"
+    },
+    {
+      "category": "lotus",
+      "name": "lotus_pink_small_01",
+      "file": "lotus/lotus_pink_small_01.png"
+    },
+    {
+      "category": "lotus",
+      "name": "lotus_white_01",
+      "file": "lotus/lotus_white_01.png"
+    },
+    {
+      "category": "lotus",
+      "name": "lotus_white_02",
+      "file": "lotus/lotus_white_02.png"
+    },
+    {
+      "category": "lotus",
+      "name": "lotus_pink_small_02",
+      "file": "lotus/lotus_pink_small_02.png"
+    },
+    {
+      "category": "lotus",
+      "name": "lotus_white_large_01",
+      "file": "lotus/lotus_white_large_01.png"
+    },
+    {
+      "category": "lotus",
+      "name": "lotus_bud_02",
+      "file": "lotus/lotus_bud_02.png"
+    },
+    {
+      "category": "lotus",
+      "name": "lotus_bud_03",
+      "file": "lotus/lotus_bud_03.png"
+    },
+    {
+      "category": "lotus",
+      "name": "lotus_pink_small_03",
+      "file": "lotus/lotus_pink_small_03.png"
+    },
+    {
+      "category": "lotus",
+      "name": "lotus_pink_small_04",
+      "file": "lotus/lotus_pink_small_04.png"
+    },
+    {
+      "category": "lotus",
+      "name": "lotus_bud_04",
+      "file": "lotus/lotus_bud_04.png"
+    },
+    {
+      "category": "plants",
+      "name": "aquatic_grass_01",
+      "file": "plants/aquatic_grass_01.png"
+    },
+    {
+      "category": "plants",
+      "name": "aquatic_grass_02",
+      "file": "plants/aquatic_grass_02.png"
+    },
+    {
+      "category": "plants",
+      "name": "fern_cluster_01",
+      "file": "plants/fern_cluster_01.png"
+    },
+    {
+      "category": "plants",
+      "name": "fern_small_01",
+      "file": "plants/fern_small_01.png"
+    },
+    {
+      "category": "plants",
+      "name": "red_plant_01",
+      "file": "plants/red_plant_01.png"
+    },
+    {
+      "category": "plants",
+      "name": "flower_cluster_01",
+      "file": "plants/flower_cluster_01.png"
+    },
+    {
+      "category": "plants",
+      "name": "fern_rock_01",
+      "file": "plants/fern_rock_01.png"
+    },
+    {
+      "category": "plants",
+      "name": "flower_rock_01",
+      "file": "plants/flower_rock_01.png"
+    },
+    {
+      "category": "plants",
+      "name": "flower_rock_02",
+      "file": "plants/flower_rock_02.png"
+    },
+    {
+      "category": "plants",
+      "name": "fern_log_01",
+      "file": "plants/fern_log_01.png"
+    },
+    {
+      "category": "rocks",
+      "name": "rock_waterfall_01",
+      "file": "rocks/rock_waterfall_01.png"
+    },
+    {
+      "category": "rocks",
+      "name": "rock_moss_large_01",
+      "file": "rocks/rock_moss_large_01.png"
+    },
+    {
+      "category": "rocks",
+      "name": "rock_medium_01",
+      "file": "rocks/rock_medium_01.png"
+    },
+    {
+      "category": "rocks",
+      "name": "rock_small_01",
+      "file": "rocks/rock_small_01.png"
+    },
+    {
+      "category": "rocks",
+      "name": "rock_medium_02",
+      "file": "rocks/rock_medium_02.png"
+    },
+    {
+      "category": "rocks",
+      "name": "rock_small_02",
+      "file": "rocks/rock_small_02.png"
+    },
+    {
+      "category": "rocks",
+      "name": "rock_small_03",
+      "file": "rocks/rock_small_03.png"
+    },
+    {
+      "category": "rocks",
+      "name": "rock_small_04",
+      "file": "rocks/rock_small_04.png"
+    },
+    {
+      "category": "rocks",
+      "name": "rock_large_flat_01",
+      "file": "rocks/rock_large_flat_01.png"
+    },
+    {
+      "category": "rocks",
+      "name": "rock_medium_03",
+      "file": "rocks/rock_medium_03.png"
+    },
+    {
+      "category": "rocks",
+      "name": "rock_large_moss_02",
+      "file": "rocks/rock_large_moss_02.png"
+    },
+    {
+      "category": "rocks",
+      "name": "stepping_stone_01",
+      "file": "rocks/stepping_stone_01.png"
+    },
+    {
+      "category": "rocks",
+      "name": "stepping_stone_02",
+      "file": "rocks/stepping_stone_02.png"
+    },
+    {
+      "category": "rocks",
+      "name": "stepping_stone_03",
+      "file": "rocks/stepping_stone_03.png"
+    },
+    {
+      "category": "rocks",
+      "name": "stepping_stone_04",
+      "file": "rocks/stepping_stone_04.png"
+    },
+    {
+      "category": "rocks",
+      "name": "stepping_stone_05",
+      "file": "rocks/stepping_stone_05.png"
+    },
+    {
+      "category": "rocks",
+      "name": "stepping_stone_06",
+      "file": "rocks/stepping_stone_06.png"
+    },
+    {
+      "category": "rocks",
+      "name": "rock_small_05",
+      "file": "rocks/rock_small_05.png"
+    },
+    {
+      "category": "rocks",
+      "name": "rock_small_06",
+      "file": "rocks/rock_small_06.png"
+    },
+    {
+      "category": "rocks",
+      "name": "rock_small_07",
+      "file": "rocks/rock_small_07.png"
+    },
+    {
+      "category": "rocks",
+      "name": "rock_small_08",
+      "file": "rocks/rock_small_08.png"
+    },
+    {
+      "category": "rocks",
+      "name": "rock_small_09",
+      "file": "rocks/rock_small_09.png"
+    },
+    {
+      "category": "rocks",
+      "name": "rock_small_10",
+      "file": "rocks/rock_small_10.png"
+    },
+    {
+      "category": "rocks",
+      "name": "rock_arch_01",
+      "file": "rocks/rock_arch_01.png"
+    },
+    {
+      "category": "rocks",
+      "name": "stacked_stones_01",
+      "file": "rocks/stacked_stones_01.png"
+    },
+    {
+      "category": "structures",
+      "name": "bridge_large_01",
+      "file": "structures/bridge_large_01.png"
+    },
+    {
+      "category": "structures",
+      "name": "dock_small_01",
+      "file": "structures/dock_small_01.png"
+    },
+    {
+      "category": "structures",
+      "name": "stone_lantern_tall_01",
+      "file": "structures/stone_lantern_tall_01.png"
+    },
+    {
+      "category": "structures",
+      "name": "stone_lantern_small_01",
+      "file": "structures/stone_lantern_small_01.png"
+    },
+    {
+      "category": "structures",
+      "name": "stone_lantern_medium_01",
+      "file": "structures/stone_lantern_medium_01.png"
+    },
+    {
+      "category": "structures",
+      "name": "bamboo_lantern_01",
+      "file": "structures/bamboo_lantern_01.png"
+    },
+    {
+      "category": "structures",
+      "name": "bamboo_water_basin_01",
+      "file": "structures/bamboo_water_basin_01.png"
+    },
+    {
+      "category": "structures",
+      "name": "bamboo_posts_01",
+      "file": "structures/bamboo_posts_01.png"
+    },
+    {
+      "category": "structures",
+      "name": "bamboo_fence_01",
+      "file": "structures/bamboo_fence_01.png"
+    },
+    {
+      "category": "decor",
+      "name": "koi_stone_marker_01",
+      "file": "decor/koi_stone_marker_01.png"
+    }
+  ],
+  "animations": [
+    "animations/fountain/metadata.json",
+    "animations/smoke_machine/metadata.json"
+  ],
+  "file_format": "PNG RGBA",
+  "transparent_background": true
+}

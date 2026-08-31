@@ -1,0 +1,25 @@
+{
+  "name": "smoke_machine_3d",
+  "type": "layered_animation",
+  "fps": 10,
+  "loop": true,
+  "static_base": "machine.png",
+  "frames": [
+    "smoke_frame_01.png",
+    "smoke_frame_02.png",
+    "smoke_frame_03.png",
+    "smoke_frame_04.png",
+    "smoke_frame_05.png",
+    "smoke_frame_06.png",
+    "smoke_frame_07.png",
+    "smoke_frame_08.png",
+    "smoke_frame_09.png",
+    "smoke_frame_10.png",
+    "smoke_frame_11.png",
+    "smoke_frame_12.png"
+  ],
+  "frame_order": "left_to_right_top_row_then_bottom_row",
+  "format": "PNG RGBA",
+  "transparent_background": true,
+  "composition_note": "Render machine.png as the fixed base and animate one smoke frame at a time from the nozzle."
+}
