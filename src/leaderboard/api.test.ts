@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
-import leaderboard, { SERVER_SCORE_RULES } from "../../api/leaderboard";
+import leaderboard, { SERVER_SCORE_RULES, containsVulgarity as serverContainsVulgarity } from "../../api/leaderboard";
+import { containsVulgarity } from "./vulgarity";
 import { ECONOMY } from "@/game/data/economy";
 import { FISH_OFFERS } from "@/game/data/fishShop";
 
@@ -26,5 +27,16 @@ describe("leaderboard API configuration", () => {
       driftCoin: ECONOMY.wallet.coinsPerDrift,
       xpPerFeed: ECONOMY.wallet.xpPerFeed,
     });
+  });
+
+  it("keeps the standalone Function name screen aligned with the shared filter", () => {
+    const samples = [
+      "Tani", "São Paulo", "Class", "bass player", "cocker", "cuidar",
+      "fuck", "FUCK YOU", "merda", "c@ralho", "fu ck", "fuuuck", "assss",
+      "puta", "putinha", "cú", "cu",
+    ];
+    for (const name of samples) {
+      expect(serverContainsVulgarity(name), name).toBe(containsVulgarity(name));
+    }
   });
 });

@@ -1,10 +1,50 @@
 import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
-import { containsVulgarity } from "../src/leaderboard/vulgarity";
 
 // Kept self-contained so Vercel can load this ESM Function without pulling the
-// browser game's module graph into the server bundle — the only local import
-// allowed is src/leaderboard/vulgarity.ts, which itself imports nothing. A
-// unit test guards these values against the client economy constants.
+// browser game's module graph into the server bundle — the builder does not
+// resolve imports outside api/, so the name screen below is a kept-in-sync
+// copy of src/leaderboard/vulgarity.ts. A unit test guards both the score
+// values and the screen against the shared client module.
+
+// Mesma triagem de nomes do cliente, com as duas camadas que evitam o
+// problema de Scunthorpe: raízes inambíguas casam em qualquer lugar,
+// palavras curtas/arriscadas só casam uma letter-run inteira.
+const VULGAR_ROOTS = [
+  "fuck", "shit", "bitch", "cunt", "whore", "slut", "nigg", "faggot", "rapist",
+  "cocksuck", "dickhead", "cumshot",
+  "caralh", "buceta", "porra", "merda", "foda", "fode", "fude", "puta",
+  "putinh", "bosta", "viado", "arrombad", "boquet", "punhet", "cacete", "cuzao",
+];
+const VULGAR_TOKENS = [
+  "ass", "dick", "cock", "cum", "fag", "tits", "penis", "vagina", "boobs", "cu",
+];
+const LEET: Record<string, string> = {
+  "0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t", "8": "b", "9": "g",
+  "@": "a", "$": "s", "!": "i", "+": "t",
+};
+
+function normalizeName(name: string): string {
+  const deaccented = name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  let out = "";
+  for (const character of deaccented) out += LEET[character] ?? character;
+  return out;
+}
+
+export function containsVulgarity(name: string): boolean {
+  const raw = normalizeName(name);
+  const variants = [raw, raw.replace(/(.)\1+/g, "$1"), raw.replace(/(.)\1{2,}/g, "$1$1")];
+  for (const variant of variants) {
+    for (const run of variant.split(/[^a-z]+/)) {
+      if (!run) continue;
+      if (VULGAR_TOKENS.includes(run) || VULGAR_ROOTS.some((root) => run.includes(root))) return true;
+    }
+  }
+  const joined = raw.replace(/[^a-z]/g, "").replace(/(.)\1+/g, "$1");
+  return VULGAR_ROOTS.some((root) => joined.includes(root));
+}
 export const SERVER_SCORE_RULES = {
   salePrices: [12, 20, 26, 32, 40, 48],
   dailyReward: 15,
