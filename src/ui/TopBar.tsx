@@ -3,11 +3,32 @@ import { gameBus, type PlayerSnapshot } from "@/game/events";
 import { gameState } from "@/game/state/GameState";
 import { makeT } from "@/game/i18n";
 
-export function TopBar({ state, onOpenStore }: { state: PlayerSnapshot; onOpenStore: () => void }) {
+export function TopBar({
+  state,
+  onOpenStore,
+  onResetGame,
+}: {
+  state: PlayerSnapshot;
+  onOpenStore: () => void;
+  onResetGame: () => Promise<boolean>;
+}) {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [resetConfirm, setResetConfirm] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState(false);
   const [coinFlare, setCoinFlare] = useState<number | null>(null);
   const flareTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const t = makeT(state.idioma);
+
+  const resetGame = async () => {
+    setResetting(true);
+    setResetError(false);
+    const reset = await onResetGame();
+    if (!reset) {
+      setResetting(false);
+      setResetError(true);
+    }
+  };
 
   useEffect(() => gameBus.events.on("wallet:flare", ({ amount }) => {
     if (flareTimer.current) clearTimeout(flareTimer.current);
@@ -28,9 +49,15 @@ export function TopBar({ state, onOpenStore }: { state: PlayerSnapshot; onOpenSt
       const node = event.target instanceof Element ? event.target : null;
       if (node?.closest(".settings-pop, .gear-btn")) return;
       setSettingsOpen(false);
+      setResetConfirm(false);
+      setResetError(false);
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSettingsOpen(false);
+      if (event.key === "Escape") {
+        setSettingsOpen(false);
+        setResetConfirm(false);
+        setResetError(false);
+      }
     };
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
@@ -44,7 +71,7 @@ export function TopBar({ state, onOpenStore }: { state: PlayerSnapshot; onOpenSt
     <header className="topbar">
       <div className="brand">
         <span className="seal">鯉</span>
-        <div><strong>KOI CAFÉ</strong><small>{t("brand.tag")}</small></div>
+        <div><strong>CARP CAFÉ</strong><small>{t("brand.tag")}</small></div>
       </div>
       <div className="wallet">
         <button className={`wallet-coins ${coinFlare !== null ? "coin-flare" : ""}`} onClick={onOpenStore}>
@@ -56,7 +83,11 @@ export function TopBar({ state, onOpenStore }: { state: PlayerSnapshot; onOpenSt
           aria-label={t("settings.aria")}
           aria-haspopup="dialog"
           aria-expanded={settingsOpen}
-          onClick={() => setSettingsOpen((v) => !v)}
+          onClick={() => {
+            setSettingsOpen((v) => !v);
+            setResetConfirm(false);
+            setResetError(false);
+          }}
         >
           <span>⚙</span>
         </button>
@@ -77,8 +108,28 @@ export function TopBar({ state, onOpenStore }: { state: PlayerSnapshot; onOpenSt
             </div>
             <div className="settings-row">
               <span>{t("settings.shakeFish")}</span>
-              <button onClick={() => gameBus.events.emit("message", { text: t("settings.shakeFishMsg") })}>ON</button>
+              <button onClick={() => gameBus.events.emit("message", { text: t("settings.shakeFishMsg") })}>{t("settings.soundOn")}</button>
             </div>
+            {!resetConfirm ? (
+              <div className="settings-row settings-reset-row">
+                <span>{t("settings.reset")}</span>
+                <button onClick={() => setResetConfirm(true)}>{t("settings.resetButton")}</button>
+              </div>
+            ) : (
+              <div className="settings-reset-confirm">
+                <strong>{t("settings.resetTitle")}</strong>
+                <p>{t("settings.resetWarning")}</p>
+                {resetError && <em role="alert">{t("settings.resetError")}</em>}
+                <div>
+                  <button disabled={resetting} onClick={() => { setResetConfirm(false); setResetError(false); }}>
+                    {t("settings.resetCancel")}
+                  </button>
+                  <button className="danger" disabled={resetting} onClick={() => void resetGame()}>
+                    {resetting ? t("settings.resetWorking") : t("settings.resetConfirm")}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

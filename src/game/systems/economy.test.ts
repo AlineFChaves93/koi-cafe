@@ -30,10 +30,10 @@ describe("economy progression rules", () => {
     expect(growthValue("premium", false)).toBeCloseTo(3 * (10 / 14), 10);
   });
 
-  it("size grows from 0.78× to 1.05× with progress, capped at GRANDE", () => {
-    expect(sizeFactor(0)).toBeCloseTo(0.78);
-    expect(sizeFactor(8)).toBeCloseTo(1.05);
-    expect(sizeFactor(50)).toBeCloseTo(1.05);
+  it("size grows from 1.17× (baby) to 2.10× (adult) with progress, capped at GRANDE", () => {
+    expect(sizeFactor(0)).toBeCloseTo(1.17);
+    expect(sizeFactor(8)).toBeCloseTo(2.1);
+    expect(sizeFactor(50)).toBeCloseTo(2.1);
   });
 
   it("progress renders integers plain and fractions with one decimal", () => {

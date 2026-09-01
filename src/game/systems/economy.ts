@@ -11,9 +11,9 @@ import type { FeedKind } from "../types";
 export const stageOf = (progress: number): 0 | 1 | 2 =>
   progress >= STAGE_ADULTO ? 2 : progress >= STAGE_MEDIO ? 1 : 0;
 
-// Keep growth noticeable without letting adult fish overwhelm the pond. The
-// same factor is used for both canvas axes, so fish always grow uniformly.
-export const sizeFactor = (progress: number) => 0.78 + 0.27 * Math.min(1, progress / STAGE_ADULTO);
+// Baby fish start at 0.78 × 1.5 = 1.17 and adults end at 1.05 × 2 = 2.10.
+// The same factor is used for both canvas axes, so fish always grow uniformly.
+export const sizeFactor = (progress: number) => 1.17 + 0.93 * Math.min(1, progress / STAGE_ADULTO);
 
 export const fishName = (variant: number, fid: number) => `${VARIANT_NAMES[variant]} #${fid}`;
 

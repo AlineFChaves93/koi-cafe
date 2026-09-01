@@ -8,6 +8,7 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 // atlases ship with the game.
 const inputDirectory = path.join(projectRoot, "../art-src/packs/koi-raw/variants");
 const outputDirectory = path.join(projectRoot, "public/assets/koi");
+const previewDirectory = path.join(outputDirectory, "previews");
 
 const atlases = [
   { filename: "platinum-ogon.png", sourceColumns: 12, expectedFrames: [8, 6, 12, 12, 12, 12] },
@@ -313,10 +314,20 @@ async function normalizeAtlas({ filename, expectedFrames, sourceColumns, pattern
     },
   }).composite(composites).webp({ quality: 88, alphaQuality: 90 }).toFile(outputPath);
 
+  // The shop must not mount a 6144x3072 animation atlas for a 72px preview:
+  // mobile browsers otherwise create another enormous composited image while
+  // the WebGL copy is still resident. Keep a tiny first-frame derivative.
+  await sharp(outputPath)
+    .extract({ left: 0, top: 0, width: cellSize, height: cellSize })
+    .resize(160, 160)
+    .webp({ quality: 84, alphaQuality: 88 })
+    .toFile(path.join(previewDirectory, path.basename(outputPath)));
+
   return `${filename}: ${grouped.map((row) => row.length).join("/")} source frames`;
 }
 
 await fs.mkdir(outputDirectory, { recursive: true });
+await fs.mkdir(previewDirectory, { recursive: true });
 // Argumentos opcionais filtram por nome de arquivo (ex.: `npm run sprites:normalize -- yamabuki-ogon`).
 const only = process.argv.slice(2);
 const selected = only.length ? atlases.filter((atlas) => only.some((name) => atlas.filename.includes(name))) : atlases;

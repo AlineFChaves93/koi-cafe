@@ -10,6 +10,7 @@ import { gameScaleFor, isForceLandscape } from "@/game/viewport";
 import { BottomConsole } from "./BottomConsole";
 import { FishCard } from "./FishCard";
 import { Intro } from "./Intro";
+import { Leaderboard } from "./Leaderboard";
 import { ShopTray } from "./ShopTray";
 import { StoreModal } from "./StoreModal";
 import { TopBar } from "./TopBar";
@@ -17,6 +18,12 @@ import { TopBar } from "./TopBar";
 // clicks on controls/overlays never plant objects into the water
 const isUiTarget = (node: EventTarget | null) =>
   node instanceof Element && Boolean(node.closest("button,a,input,.glass-card,.bottom-console,.shop-tray,.modal-backdrop,.fish-card,.intro"));
+
+// Pointer capture keeps pointerup targeted at the drag button even after the
+// cursor has moved away. Hit-test the release coordinates instead so a cast
+// only happens when the pointer is actually over the pond, not over the UI.
+const isUiPoint = (screenX: number, screenY: number) =>
+  isUiTarget(document.elementFromPoint(screenX, screenY));
 
 // Com a paisagem forçada o elemento fica girado 90° na tela: o bounding rect
 // vem trocado/girado em relação ao layout, então o toque precisa ser
@@ -61,6 +68,7 @@ export function GameShell() {
   const [isAiming, setIsAiming] = useState(false);
   const [storeOpen, setStoreOpen] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
+  const [resetInProgress, setResetInProgress] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
   // mensagens do jogo (falhas de estoque, seleção, cura…) como aviso flutuante
@@ -144,6 +152,10 @@ export function GameShell() {
   const endAim = useCallback((event: ReactPointerEvent<HTMLElement>) => {
     if (!isAiming) return;
     setIsAiming(false);
+    if (isUiPoint(event.clientX, event.clientY)) {
+      gameBus.commands.emit("aim:cancel");
+      return;
+    }
     gameBus.commands.emit("aim:end", pointFromEvent(event));
   }, [isAiming]);
 
@@ -189,6 +201,26 @@ export function GameShell() {
     setShopOpen(true);
   };
 
+  const resetGame = async (): Promise<boolean> => {
+    setResetInProgress(true);
+    // Give leaderboard effects one frame to abort any pending score submission.
+    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+    try {
+      const response = await fetch("/api/leaderboard", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ playerId: state.leaderboardId }),
+      });
+      if (!response.ok) throw new Error("Leaderboard reset failed");
+      gameState.clearSave();
+      window.location.reload();
+      return true;
+    } catch {
+      setResetInProgress(false);
+      return false;
+    }
+  };
+
   return (
     <div ref={viewportRef} className="game-viewport">
       <div className="rotate-surface">
@@ -204,7 +236,8 @@ export function GameShell() {
             <div ref={hostRef} className="game-host" aria-hidden />
 
             <div className="hud-layer">
-              <TopBar state={state} onOpenStore={openStore} />
+              <TopBar state={state} onOpenStore={openStore} onResetGame={resetGame} />
+              <Leaderboard state={state} paused={resetInProgress} />
 
               {isAiming && (
                 <div className="aim-target" style={{ left: `${target.x}%`, top: `${target.y}%` }}>
@@ -249,7 +282,16 @@ export function GameShell() {
 
               {storeOpen && <StoreModal state={state} onClose={() => setStoreOpen(false)} />}
 
-              <Intro lang={state.idioma} />
+              {gameState.isInitialized && (
+                <Intro
+                  lang={state.idioma}
+                  playerName={state.playerName}
+                  onSetPlayerName={(playerName) => {
+                    gameState.patch({ playerName });
+                    gameState.saveNow();
+                  }}
+                />
+              )}
             </div>
           </section>
         </main>

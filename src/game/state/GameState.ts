@@ -5,8 +5,10 @@ import { SCENERY, LEVEL_NUMBERS, MAX_LEVEL } from "../data/scenery";
 import { ECONOMY, STARTING_INVENTORY } from "../data/economy";
 import { KOI_VARIANTS } from "../data/variants";
 import { gameBus, type PlayerSnapshot } from "../events";
+import { makeT } from "../i18n";
+import { emptySoldByVariant } from "../../leaderboard/score";
 import {
-  STARTER_KIT_VERSION, applyDailyCycle, readSave, writeSave, type SavedFish, type Storage,
+  ALL_SAVE_KEYS, STARTER_KIT_VERSION, applyDailyCycle, readSave, writeSave, type SavedFish, type Storage,
 } from "../systems/save";
 import { dayKey } from "../types";
 
@@ -20,12 +22,16 @@ function defaults(): PlayerSnapshot {
     xp: 0, streak: 1,
     rewardClaimed: false, totalFed: 0, totalSold: 0,
     missionFed: 0, missionClaimed: false,
-    // primeira jogada: ×2 punhados, ×1 ração especial e ×1 mamadeira
+    // primeira jogada: 20 porções comuns, ×1 ração especial e ×1 mamadeira
     premiumCount: STARTING_INVENTORY.specialRations,
     remedios: STARTING_INVENTORY.remedyBottles,
     collection: [], bought: [], fishUnlocked: [0],
     levelRewards: [],
-    feedSel: "comum", som: true, idioma: "pt",
+    playerName: "", leaderboardId: "",
+    leaderboardSoldByVariant: emptySoldByVariant(),
+    leaderboardDailyRewards: 0, leaderboardMissionRewards: 0,
+    leaderboardDriftCoins: 0,
+    feedSel: "comum", som: true, idioma: "en",
     selectedFid: null,
   };
 }
@@ -56,7 +62,7 @@ export class GameState {
     this.snapshot = { ...this.snapshot, xp };
     const level = levelOf(xp);
     if (level > this.prevLevel) {
-      gameBus.events.emit("message", { text: `Nível ${level} alcançado! O cardume agradece` });
+      gameBus.events.emit("message", { text: makeT(this.snapshot.idioma)("msg.levelUp", { level }) });
     }
     this.prevLevel = level;
     this.notify();
@@ -88,6 +94,8 @@ export class GameState {
       };
     }
     this.prevLevel = levelOf(save.player.xp);
+    const leaderboardId = save.player.leaderboardId || globalThis.crypto?.randomUUID?.()
+      || `koi-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     this.snapshot = {
       ...this.snapshot,
       food: save.player.food,
@@ -104,6 +112,12 @@ export class GameState {
       collection: save.player.collection,
       fishUnlocked: save.player.fishUnlocked ?? [0],
       levelRewards: save.player.levelRewards ?? [],
+      playerName: save.player.playerName ?? "",
+      leaderboardId,
+      leaderboardSoldByVariant: save.player.leaderboardSoldByVariant ?? emptySoldByVariant(),
+      leaderboardDailyRewards: save.player.leaderboardDailyRewards ?? 0,
+      leaderboardMissionRewards: save.player.leaderboardMissionRewards ?? 0,
+      leaderboardDriftCoins: save.player.leaderboardDriftCoins ?? 0,
       bought: save.scenery,
       som: save.player.som,
       idioma: save.player.idioma,
@@ -129,6 +143,23 @@ export class GameState {
     this.scheduleSave();
   }
 
+  clearSave(): void {
+    if (this.saveTimer) clearTimeout(this.saveTimer);
+    this.saveTimer = null;
+    const storage = this.storage;
+    this.storage = null;
+    if (storage) {
+      for (const key of ALL_SAVE_KEYS) {
+        if (storage.removeItem) storage.removeItem(key);
+        else storage.setItem(key, "");
+      }
+    }
+    this.snapshot = defaults();
+    this.prevLevel = 1;
+    this.initialized = false;
+    this.notify();
+  }
+
   private scheduleSave(): void {
     if (!this.storage) return;
     if (this.saveTimer) clearTimeout(this.saveTimer);
@@ -148,6 +179,11 @@ export class GameState {
         missionFed: s.missionFed, missionClaimed: s.missionClaimed,
         premium: s.premiumCount, remedios: s.remedios,
         collection: s.collection, fishUnlocked: s.fishUnlocked, levelRewards: s.levelRewards,
+        playerName: s.playerName, leaderboardId: s.leaderboardId,
+        leaderboardSoldByVariant: s.leaderboardSoldByVariant,
+        leaderboardDailyRewards: s.leaderboardDailyRewards,
+        leaderboardMissionRewards: s.leaderboardMissionRewards,
+        leaderboardDriftCoins: s.leaderboardDriftCoins,
         som: s.som, idioma: s.idioma,
         food: s.food,
       },

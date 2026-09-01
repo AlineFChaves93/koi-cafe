@@ -1,9 +1,22 @@
 import { useEffect, useState } from "react";
 import { makeT, type Lang } from "@/game/i18n";
+import { containsVulgarity } from "@/leaderboard/vulgarity";
 
-export function Intro({ lang }: { lang: Lang }) {
-  const [intro, setIntro] = useState(true);
+export function Intro({
+  lang,
+  playerName,
+  onSetPlayerName,
+}: {
+  lang: Lang;
+  playerName: string;
+  onSetPlayerName: (name: string) => void;
+}) {
+  // GameShell mounts the intro only after save hydration. Returning players
+  // already have an identity, so they can go straight back to their pond.
+  const [intro, setIntro] = useState(() => !playerName);
   const [leaving, setLeaving] = useState(false);
+  const [name, setName] = useState(playerName);
+  const [nameRejected, setNameRejected] = useState(false);
   const t = makeT(lang);
 
   useEffect(() => {
@@ -16,6 +29,13 @@ export function Intro({ lang }: { lang: Lang }) {
   if (!intro) return null;
 
   const begin = () => {
+    const cleanName = name.trim().replace(/\s+/g, " ");
+    if (Array.from(cleanName).length < 2) return;
+    if (containsVulgarity(cleanName)) {
+      setNameRejected(true);
+      return;
+    }
+    onSetPlayerName(cleanName);
     setLeaving(true);
     window.setTimeout(() => setIntro(false), 450);
   };
@@ -24,12 +44,24 @@ export function Intro({ lang }: { lang: Lang }) {
     <div className={`intro ${leaving ? "leaving" : ""}`}>
       <div className="intro-art" aria-hidden />
       <div className="intro-panel">
-        <small>CARP CAFÉ</small>
-        <h1>Koi Café</h1>
-        <p>
-          {t("intro.text")}
-        </p>
-        <button onClick={begin}>{t("intro.cta")}</button>
+        <h1>Carp Café</h1>
+        <form onSubmit={(event) => { event.preventDefault(); begin(); }}>
+          <label htmlFor="player-name">{t("intro.nameLabel")}</label>
+          <input
+            id="player-name"
+            value={name}
+            onChange={(event) => {
+              setName(event.target.value);
+              setNameRejected(false);
+            }}
+            maxLength={20}
+            autoComplete="nickname"
+            placeholder={t("intro.namePlaceholder")}
+            aria-invalid={nameRejected}
+          />
+          {nameRejected && <p className="intro-error" role="alert">{t("intro.nameVulgar")}</p>}
+          <button type="submit" disabled={Array.from(name.trim()).length < 2}>{t("intro.cta")}</button>
+        </form>
       </div>
     </div>
   );

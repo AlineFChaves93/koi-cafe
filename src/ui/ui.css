@@ -1,4 +1,4 @@
-/* Koi Café — UI overlay styles.
+/* Carp Café — UI overlay styles.
    The pond world (fish, pellets, scenery, platform, water, splashes) renders
    in Phaser inside .game-host; everything below is the HUD/menu layer. */
 
@@ -122,7 +122,7 @@ button:focus-visible { outline: 2px solid #ffe2a8; outline-offset: 3px; }
    célula de carteira — as células são estilizadas mais abaixo usando
    :not(.gear-btn)/:not(.settings-pop) justamente para não pisar aqui. */
 .settings-pop {
-  position: absolute; right: 0; top: calc(100% + 12px); width: 224px; padding: 6px;
+  position: absolute; right: 0; top: calc(100% + 12px); width: 254px; padding: 6px;
   display: grid; border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 16px;
   background: rgba(9, 38, 52, 0.94); backdrop-filter: blur(16px);
   box-shadow: 0 18px 40px rgba(6, 30, 42, 0.45);
@@ -152,6 +152,24 @@ button:focus-visible { outline: 2px solid #ffe2a8; outline-offset: 3px; }
 }
 .settings-row button:hover { background: rgba(239, 184, 102, 0.24); border-color: rgba(239, 184, 102, 0.7); }
 .settings-row button:active { transform: scale(0.95); }
+.settings-reset-row > button {
+  color: #ff9dac; border-color: rgba(255, 107, 129, .45); background: rgba(255, 107, 129, .1);
+}
+.settings-reset-row > button:hover { border-color: rgba(255, 107, 129, .75); background: rgba(255, 107, 129, .2); }
+.settings-reset-confirm {
+  margin: 5px; padding: 11px; display: grid; gap: 7px; border: 1px solid rgba(255, 107, 129, .35);
+  border-radius: 12px; background: rgba(80, 18, 30, .28);
+}
+.settings-reset-confirm > strong { color: #ffb2bd; font-size: 10px; letter-spacing: .5px; }
+.settings-reset-confirm > p { margin: 0; color: rgba(244, 234, 215, .72); font-size: 8.5px; font-weight: 650; line-height: 1.45; }
+.settings-reset-confirm > em { color: #ffb2bd; font-size: 8px; font-style: normal; font-weight: 750; line-height: 1.35; }
+.settings-reset-confirm > div { display: grid; grid-template-columns: 1fr 1.25fr; gap: 6px; margin-top: 2px; }
+.settings-reset-confirm button {
+  min-width: 0; height: 29px; padding: 0 8px; border: 1px solid rgba(255, 255, 255, .18); border-radius: 9px;
+  color: var(--cream); background: rgba(255, 255, 255, .08); font-size: 7.5px; font-weight: 900; letter-spacing: .65px; cursor: pointer;
+}
+.settings-reset-confirm button.danger { border-color: rgba(255, 107, 129, .5); color: #fff; background: rgba(201, 53, 82, .82); }
+.settings-reset-confirm button:disabled { cursor: wait; opacity: .55; }
 
 /* células da carteira (saldo de moedas): engrenagem e popup ficam de fora */
 .wallet > div:not(.settings-pop), .wallet > button:not(.gear-btn) {
@@ -179,6 +197,54 @@ button:focus-visible { outline: 2px solid #ffe2a8; outline-offset: 3px; }
 @keyframes wallet-pop { 40% { transform: scale(1.12) rotate(1deg); } }
 @keyframes coin-spin { to { transform: rotateY(720deg); } }
 @keyframes wallet-gain { from { opacity: 0; transform: translateY(4px) scale(.7); } 30% { opacity: 1; } to { opacity: 0; transform: translateY(-32px) scale(1.08); } }
+
+/* ---- worldwide leaderboard ---- */
+.leaderboard-widget {
+  position: absolute; z-index: 44; top: 86px; left: var(--edge); width: 226px; padding: 10px 11px 9px;
+  display: grid; gap: 7px; border: 1px solid rgba(239, 184, 102, .32); border-radius: 15px;
+  color: var(--cream); background: rgba(8, 33, 41, .86); backdrop-filter: blur(16px);
+  box-shadow: 0 12px 28px rgba(3, 22, 29, .34); cursor: pointer; text-align: left;
+  transition: transform .16s ease, border-color .16s ease, background .16s ease;
+}
+.leaderboard-widget:hover { transform: translateY(-2px); border-color: rgba(239, 184, 102, .72); background: rgba(8, 33, 41, .94); }
+.leaderboard-widget:active { transform: translateY(1px) scale(.985); }
+.leaderboard-widget-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.leaderboard-widget-head b { color: #ffe2a8; font-size: 9px; letter-spacing: 1.3px; }
+.leaderboard-widget-head i { color: rgba(244, 234, 215, .52); font-size: 6.5px; font-style: normal; font-weight: 900; letter-spacing: 1.1px; }
+.leaderboard-widget-rows { display: grid; gap: 3px; }
+.leaderboard-widget-rows > em { padding: 4px 2px; color: rgba(244, 234, 215, .62); font-size: 8px; font-style: normal; }
+.leaderboard-widget-row {
+  height: 23px; padding: 0 7px; display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center;
+  border-radius: 8px; background: rgba(255, 255, 255, .06); font-size: 8.5px;
+}
+.leaderboard-widget-row > i { font-style: normal; font-size: 11px; }
+.leaderboard-widget-row > b { overflow: hidden; color: #fff; text-overflow: ellipsis; white-space: nowrap; }
+.leaderboard-widget-row > strong { color: var(--gold); font-size: 9px; }
+.leaderboard-mine {
+  padding-top: 5px; overflow: hidden; border-top: 1px solid rgba(255, 255, 255, .09);
+  color: rgba(244, 234, 215, .65); font-size: 7.5px; font-weight: 800; letter-spacing: .5px; text-overflow: ellipsis; white-space: nowrap;
+}
+.leaderboard-backdrop { z-index: 210; }
+.leaderboard-modal {
+  width: min(580px, 100%); max-height: calc(100% - 32px); overflow: auto; padding: 24px;
+  border: 1px solid rgba(239, 184, 102, .3); border-radius: 24px;
+  color: var(--cream); background: linear-gradient(145deg, #12414f, #072431);
+  box-shadow: 0 35px 90px rgba(3, 20, 28, .65);
+}
+.leaderboard-modal > header { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+.leaderboard-modal header small { color: var(--gold); font-size: 8px; font-weight: 900; letter-spacing: 2.2px; }
+.leaderboard-modal h2 { margin: 6px 0 16px; font: 800 27px Arial, Helvetica, sans-serif; letter-spacing: -.4px; }
+.leaderboard-table { display: grid; gap: 5px; }
+.leaderboard-table > p { margin: 24px 0; color: rgba(244, 234, 215, .65); text-align: center; font-size: 12px; }
+.leaderboard-table-row {
+  min-height: 35px; padding: 0 12px; display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center;
+  border: 1px solid rgba(255, 255, 255, .08); border-radius: 11px; background: rgba(255, 255, 255, .055);
+}
+.leaderboard-table-row:nth-child(-n+3) { border-color: rgba(239, 184, 102, .22); background: rgba(239, 184, 102, .075); }
+.leaderboard-rank { font-size: 14px; }
+.leaderboard-table-row strong { overflow: hidden; color: #fff; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.leaderboard-table-row b { color: #ffe2a8; font-size: 11px; }
+.leaderboard-modal footer { margin-top: 14px; color: rgba(244, 234, 215, .52); font-size: 8.5px; line-height: 1.45; text-align: center; }
 
 /* ---- glass cards + console info chips ---- */
 .glass-card {
@@ -452,7 +518,7 @@ button:focus-visible { outline: 2px solid #ffe2a8; outline-offset: 3px; }
 .fish-shop-item { min-height: 154px; }
 .fish-sprite-preview {
   display: block; width: 72px; height: 72px;
-  background-repeat: no-repeat; background-position: 0 0; background-size: 1200% 600%;
+  background-repeat: no-repeat; background-position: center; background-size: contain;
   transform: rotate(-8deg); filter: drop-shadow(0 5px 5px rgba(2, 16, 24, 0.42));
 }
 .fish-shop-item.mystery .fish-sprite-preview {
@@ -532,6 +598,7 @@ button:focus-visible { outline: 2px solid #ffe2a8; outline-offset: 3px; }
   font-size: 10px; font-weight: 900; letter-spacing: 1.15px; cursor: pointer;
 }
 .store-tabs button.active { color: #173c42; background: var(--gold); box-shadow: 0 3px 0 var(--gold-deep); }
+.store-tabs button:disabled { cursor: not-allowed; opacity: .38; }
 .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; margin: 16px 0 0; }
 .plans article { position: relative; padding: 20px; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 17px; background: rgba(255, 255, 255, 0.05); }
 .plans article.featured-plan { border-color: rgba(239, 184, 102, 0.55); background: linear-gradient(145deg, rgba(239, 184, 102, 0.14), rgba(255, 255, 255, 0.04)); }
@@ -584,9 +651,18 @@ button:focus-visible { outline: 2px solid #ffe2a8; outline-offset: 3px; }
   filter: drop-shadow(0 8px 18px rgba(2, 19, 24, 0.5));
   text-shadow: 0 2px 12px rgba(4, 24, 34, 0.88), 0 1px 2px rgba(4, 24, 34, 0.9);
 }
-.intro-panel small { font-size: 8px; font-weight: 900; letter-spacing: 4px; color: #ffe3a2; }
 .intro-panel h1 { margin: 10px 0 12px; font: 800 clamp(42px, 7cqw, 58px)/.95 Arial, Helvetica, sans-serif; letter-spacing: -1px; }
-.intro-panel p { margin: 0 auto 18px; max-width: 360px; font: 500 14px/1.55 Arial, Helvetica, sans-serif; color: rgba(255, 255, 255, 0.92); }
+.intro-panel form { width: min(310px, 100%); margin: 0 auto; display: grid; justify-items: center; gap: 9px; }
+.intro-panel label { color: #ffe3a2; font-size: 8px; font-weight: 900; letter-spacing: 2px; }
+.intro-panel input {
+  width: 100%; height: 46px; padding: 0 16px; border: 1px solid rgba(255, 255, 255, .34); border-radius: 14px;
+  outline: 0; color: #fff; background: rgba(5, 30, 39, .78); backdrop-filter: blur(12px);
+  box-shadow: 0 10px 24px rgba(3, 20, 28, .28); font-size: 14px; font-weight: 750; text-align: center;
+}
+.intro-panel input::placeholder { color: rgba(255, 255, 255, .55); }
+.intro-panel input:focus { border-color: #ffe3a2; box-shadow: 0 0 0 3px rgba(239, 184, 102, .2), 0 10px 24px rgba(3, 20, 28, .28); }
+.intro-panel input[aria-invalid="true"] { border-color: #ff8f8f; box-shadow: 0 0 0 3px rgba(255, 143, 143, .22), 0 10px 24px rgba(3, 20, 28, .28); }
+.intro-panel .intro-error { margin: 0; color: #ffb3b3; font-size: 9px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; }
 .intro-panel button {
   height: 54px; padding: 0 34px; border: 0; border-radius: 17px;
   background: var(--carrot); color: #fff; text-shadow: 0 2px 0 rgba(122, 48, 4, 0.4);
@@ -597,6 +673,7 @@ button:focus-visible { outline: 2px solid #ffe2a8; outline-offset: 3px; }
 }
 .intro-panel button:hover { transform: translateY(-2px) scale(1.03); }
 .intro-panel button:active { transform: translateY(4px) scale(0.98); box-shadow: 0 1px 0 var(--carrot-deep); }
+.intro-panel button:disabled { cursor: not-allowed; opacity: .52; animation: none; transform: none; box-shadow: 0 3px 0 var(--carrot-deep); }
 
 @media (prefers-reduced-motion: reduce) {
   .intro-art { animation: none; }
@@ -620,4 +697,14 @@ button:focus-visible { outline: 2px solid #ffe2a8; outline-offset: 3px; }
   .bottom-console { bottom: 14px; }
   .shop-tray { bottom: 16px; }
   .modal-backdrop { padding: 16px; }
+}
+
+/* Mobile browsers can run the pond in a memory-constrained WebGL process.
+   Blurring a live canvas behind a newly composited store layer is enough to
+   make iOS/Android discard that process, which looks like an app crash. */
+@media (pointer: coarse) {
+  .shop-tray, .modal-backdrop {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }

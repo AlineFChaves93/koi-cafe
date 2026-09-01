@@ -71,7 +71,7 @@ export function ShopTray({
                     )}
                     <span
                       className="fish-sprite-preview"
-                      style={{ backgroundImage: `url(${variant.file})` }}
+                      style={{ backgroundImage: `url(${variant.preview})` }}
                       aria-hidden
                     />
                   </span>

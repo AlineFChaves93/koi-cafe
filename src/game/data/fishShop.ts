@@ -1,4 +1,5 @@
 import { levelProgress } from "../data/scenery";
+import { makeT, type Lang } from "../i18n";
 import type { PlayerSnapshot } from "../events";
 
 export type FishRequirement =
@@ -35,12 +36,16 @@ export const FISH_OFFER_BY_VARIANT = Object.fromEntries(
   FISH_OFFERS.map((offer) => [offer.variant, offer]),
 ) as Record<number, FishOffer>;
 
+// Rótulo do requisito no idioma ativo — a mensagens da loja constroem o
+// "2/2 peças no nível 1" por aqui (default: inglês, o idioma inicial).
 export function fishRequirementProgress(
   requirement: FishRequirement | undefined,
   state: PlayerSnapshot,
   pondCount: number,
+  lang: Lang = "en",
 ): { current: number; target: number; label: string; met: boolean } {
-  if (!requirement) return { current: 1, target: 1, label: "Disponível", met: true };
+  const t = makeT(lang);
+  if (!requirement) return { current: 1, target: 1, label: t("req.available"), met: true };
   const current =
     requirement.kind === "pond" ? pondCount
       : requirement.kind === "level" ? levelProgress(requirement.level, state.bought).current
@@ -48,11 +53,11 @@ export function fishRequirementProgress(
           : requirement.kind === "fed" ? state.totalFed
             : state.collection.length;
   const noun =
-    requirement.kind === "pond" ? "peixes no lago"
-      : requirement.kind === "level" ? `peças no nível ${requirement.level}`
-        : requirement.kind === "sold" ? "peixes vendidos"
-          : requirement.kind === "fed" ? "arraçoadas"
-            : "espécies adultas";
+    requirement.kind === "pond" ? t("req.pond")
+      : requirement.kind === "level" ? t("req.level", { level: requirement.level })
+        : requirement.kind === "sold" ? t("req.sold")
+          : requirement.kind === "fed" ? t("req.fed")
+            : t("req.collection");
   const target = requirement.kind === "level"
     ? levelProgress(requirement.level, state.bought).total
     : requirement.amount;

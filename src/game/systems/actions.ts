@@ -3,13 +3,17 @@
 // GameState patches and bus events. Timers run through an injected scheduler
 // so the real game uses the Phaser clock and tests can stub it.
 import {
-  BUCKET_PRICE, COMMON_RATION_PRICE, DAILY_LIMIT, DRIFT_COIN, ECONOMY, PREMIUM_PRICE, PREMIUM_POT_THROWS,
-  RATION_BUCKET, STAGE_MEDIO, STAGE_ADULTO, STAGE_NAMES,
+  BUCKET_PRICE, COMMON_RATION_PRICE, DAILY_LIMIT, DRIFT_COIN, ECONOMY, PREMIUM_PRICE,
+  RATION_BUCKET, STAGE_MEDIO, STAGE_ADULTO,
 } from "../data/economy";
-import { SCENERY_BY_ID, completedLevels, nextScenery, rewardForLevel } from "../data/scenery";
+import {
+  LEVEL_COMMON_FEED_REWARD, LEVEL_PREMIUM_FEED_REWARD, SCENERY_BY_ID,
+  completedLevels, nextScenery, rewardForLevel,
+} from "../data/scenery";
 import { FISH_OFFER_BY_VARIANT, fishRequirementProgress, sellPriceFor } from "../data/fishShop";
 import { KOI_VARIANTS } from "../data/variants";
 import { gameBus } from "../events";
+import { makeT, sceneryName, stageName, variantName, type StringKey } from "../i18n";
 import type { GameState } from "../state/GameState";
 import { fishName, fishPriceFor, medPriceFor, progText, stageOf } from "./economy";
 import { clampToWater, findFishNear, scatterPellets, sicknessVictim } from "./feeding";
@@ -19,7 +23,6 @@ import type { FeedChoice, Fish, FishView, SimWorld } from "../types";
 
 const MISSION_GOAL = ECONOMY.mission.goal;
 const MISSION_REWARD = ECONOMY.mission.rewardCoins;
-const DEFAULT_HINT = "Segure para mirar • perto de um peixe = ração só dele";
 
 export type GameContext = {
   world: SimWorld;
@@ -32,16 +35,19 @@ const fishViews = (world: SimWorld): FishView[] =>
 
 const emitFishes = (world: SimWorld) => gameBus.events.emit("fishes:changed", { fishes: fishViews(world) });
 const say = (text: string) => gameBus.events.emit("message", { text });
+// mensagem flutuante já traduzida no idioma escolhido nas configurações
+const sayT = (ctx: GameContext, key: StringKey, params?: Record<string, string | number>) =>
+  say(makeT(ctx.state.getSnapshot().idioma)(key, params));
 
 function buyCommon(ctx: GameContext): boolean {
   const { state } = ctx;
   const snap = state.getSnapshot();
   if (snap.coins < COMMON_RATION_PRICE) {
-    say(`Moedas insuficientes — um punhado custa ◎${COMMON_RATION_PRICE}`);
+    sayT(ctx, "msg.noCoinsHandful", { price: COMMON_RATION_PRICE });
     return false;
   }
   state.patch({ coins: snap.coins - COMMON_RATION_PRICE, food: snap.food + 1 });
-  say(`Punhado de ração +1 (−◎${COMMON_RATION_PRICE})`);
+  sayT(ctx, "msg.boughtHandful", { price: COMMON_RATION_PRICE });
   return true;
 }
 
@@ -49,25 +55,25 @@ function buyBucket(ctx: GameContext): boolean {
   const { state } = ctx;
   const snap = state.getSnapshot();
   if (snap.coins < BUCKET_PRICE) {
-    say(`Moedas insuficientes — um balde custa ◎${BUCKET_PRICE}`);
+    sayT(ctx, "msg.noCoinsBucket", { price: BUCKET_PRICE });
     return false;
   }
   state.patch({ coins: snap.coins - BUCKET_PRICE, food: snap.food + RATION_BUCKET });
-  say(`Balde de ração +${RATION_BUCKET} porções (−◎${BUCKET_PRICE})`);
+  sayT(ctx, "msg.boughtBucket", { count: RATION_BUCKET, price: BUCKET_PRICE });
   return true;
 }
 
 function buyPremium(ctx: GameContext): boolean {
   const { state } = ctx;
   if (state.getSnapshot().coins < PREMIUM_PRICE) {
-    say(`Moedas insuficientes — ração especial custa ◎${PREMIUM_PRICE}`);
+    sayT(ctx, "msg.noCoinsPremium", { price: PREMIUM_PRICE });
     return false;
   }
   state.patch({
     coins: state.getSnapshot().coins - PREMIUM_PRICE,
     premiumCount: state.getSnapshot().premiumCount + 1,
   });
-  say(`Ração especial +1 (−◎${PREMIUM_PRICE}) • baby fish vira médio em 1 porção • peixes não adoecem`);
+  sayT(ctx, "msg.boughtPremium", { price: PREMIUM_PRICE });
   return true;
 }
 
@@ -86,12 +92,12 @@ function ensureCommonRations(ctx: GameContext): boolean {
   const snap = ctx.state.getSnapshot();
   if (snap.food > 0) return true;
   if (ECONOMY.paywallEnabled) {
-    say("O balde de ração acabou — você ganha um novo amanhã");
+    sayT(ctx, "msg.bucketEmptyTomorrow");
     return false;
   }
   ctx.state.patch({ food: DAILY_LIMIT });
   // adiada para não ser engolida pela mensagem de mira que vem logo em seguida
-  ctx.schedule(250, () => say(`Balde do dia renovado: +${DAILY_LIMIT} porções de ração`));
+  ctx.schedule(250, () => sayT(ctx, "msg.bucketRenewed", { count: DAILY_LIMIT }));
   return true;
 }
 
@@ -99,10 +105,11 @@ function releaseFood(ctx: GameContext, xPct: number, yPct: number): void {
   const { world, state } = ctx;
   let snap = state.getSnapshot();
   if (!world.aiming) return;
+  const t = makeT(snap.idioma);
   const usingPremium = snap.feedSel === "premium";
   if (usingPremium) {
     if (snap.premiumCount <= 0) {
-      say(`Sem ração especial — compre por ◎${PREMIUM_PRICE} na Loja Koi`);
+      say(t("msg.noPremiumBuy", { price: PREMIUM_PRICE }));
       world.aiming = false;
       fallBackToCommon(ctx);
       return;
@@ -135,7 +142,7 @@ function releaseFood(ctx: GameContext, xPct: number, yPct: number): void {
   state.addXp(ECONOMY.wallet.xpPerFeed);
   if (usingPremium && snap.premiumCount - 1 <= 0) {
     fallBackToCommon(ctx);
-    ctx.schedule(900, () => say("Ração especial acabou — o console voltou para a comum"));
+    ctx.schedule(900, () => sayT(ctx, "msg.premiumRanOutConsole"));
   }
 
   scatterPellets(world, spot, usingPremium ? "premium" : "comum", throwId);
@@ -148,10 +155,14 @@ function releaseFood(ctx: GameContext, xPct: number, yPct: number): void {
 
   if (targetFish) {
     const stage = stageOf(targetFish.progress);
-    const prog = stage === 2 ? STAGE_NAMES[2] : `${progText(targetFish.progress)}/${stage === 0 ? STAGE_MEDIO : STAGE_ADULTO}`;
-    say(`Ração ${usingPremium ? "especial " : ""}para ${fishName(targetFish.variant, targetFish.fid)} (${prog})${targetFish.sick ? " • 🍼 DOENTE — dê a mamadeira para curar" : ""}`);
+    const prog = stage === 2 ? stageName(snap.idioma, 2) : `${progText(targetFish.progress)}/${stage === 0 ? STAGE_MEDIO : STAGE_ADULTO}`;
+    say(t(usingPremium ? "msg.feedAimedPremium" : "msg.feedAimedCommon", {
+      fish: fishName(targetFish.variant, targetFish.fid),
+      prog,
+      sick: targetFish.sick ? t("msg.feedSickSuffix") : "",
+    }));
   } else {
-    say("Ração ao cardume • crescimento mais lento (+3 jogadas)");
+    sayT(ctx, "msg.feedSchool");
   }
 
   // ração especial não adoece os peixes — só a comum alimenta o ciclo: a cada
@@ -165,13 +176,15 @@ function releaseFood(ctx: GameContext, xPct: number, yPct: number): void {
     const caught: Fish = victim;
     caught.sick = true;
     const hint = snap.remedios > 0
-      ? "Toque nele e dê a mamadeira do estoque (essa é grátis!)"
-      : `Toque nele e dê a mamadeira (◎${medPriceFor(snap.bought)})`;
-    ctx.schedule(1200, () => say(`${fishName(caught.variant, caught.fid)} ficou DOENTE! ${hint}`));
+      ? t("msg.sickHintStock")
+      : t("msg.sickHintBuy", { price: medPriceFor(snap.bought) });
+    ctx.schedule(1200, () => say(t("msg.fishGotSick", { fish: fishName(caught.variant, caught.fid), hint })));
     emitFishes(world);
   }
 
-  ctx.schedule(1750, () => say(missionReady ? "Missão pronta! Resgate +25 moedas" : DEFAULT_HINT));
+  ctx.schedule(1750, () => say(missionReady
+    ? t("msg.missionReady", { coins: MISSION_REWARD })
+    : t("msg.holdToAimHint")));
 }
 
 // mamadeira pelo botão central: solta a mira perto de um peixe doente e o
@@ -183,7 +196,7 @@ function releaseRemedy(ctx: GameContext, xPct: number, yPct: number): void {
   const snap = state.getSnapshot();
   const price = medPriceFor(snap.bought);
   if (snap.remedios <= 0 && snap.coins < price) {
-    say(`Mamadeira custa ◎${price} — venda peixes grandes para juntar moedas`);
+    sayT(ctx, "msg.medicinePrice", { price });
     return;
   }
   const px = (xPct / 100) * world.w;
@@ -200,7 +213,7 @@ function releaseRemedy(ctx: GameContext, xPct: number, yPct: number): void {
     }
   }
   if (!sick) {
-    say("Solte a mamadeira sobre um peixe doente");
+    sayT(ctx, "msg.releaseOnSick");
     return;
   }
   gameBus.events.emit("remedy:thrown", { fid: sick.fid, x: sick.x, y: sick.y });
@@ -213,10 +226,13 @@ function tryCollectDriftCoin(ctx: GameContext, xPct: number, yPct: number): bool
   const grabbed = collectDriftCoin(world, (xPct / 100) * world.w, (yPct / 100) * world.h);
   if (!grabbed) return false;
   const snap = state.getSnapshot();
-  state.patch({ coins: snap.coins + DRIFT_COIN.value });
+  state.patch({
+    coins: snap.coins + DRIFT_COIN.value,
+    leaderboardDriftCoins: snap.leaderboardDriftCoins + 1,
+  });
   gameBus.events.emit("coin:collected", { x: grabbed.x, y: grabbed.y, amount: DRIFT_COIN.value });
   gameBus.events.emit("wallet:flare", { amount: DRIFT_COIN.value });
-  say(`Moeda pescada da correnteza! +◎${DRIFT_COIN.value}`);
+  sayT(ctx, "msg.coinCollected", { amount: DRIFT_COIN.value });
   return true;
 }
 
@@ -229,10 +245,18 @@ function tapSelect(ctx: GameContext, xPct: number, yPct: number): void {
   if (best) {
     state.patch({ selectedFid: best.fid });
     emitFishes(world);
+    const lang = state.getSnapshot().idioma;
+    const t = makeT(lang);
     const stage = stageOf(best.progress);
     say(stage === 2
-      ? `${fishName(best.variant, best.fid)} está ${STAGE_NAMES[2]} — pronto para vender por ◎${sellPriceFor(best.variant)}`
-      : `${fishName(best.variant, best.fid)}: ${STAGE_NAMES[stage]} • ${progText(best.progress)}/${stage === 0 ? STAGE_MEDIO : STAGE_ADULTO} porções${best.sick ? " • 🍼 precisa de mamadeira" : ""}`);
+      ? t("msg.fishAdult", {
+          fish: fishName(best.variant, best.fid), stage: stageName(lang, 2), price: sellPriceFor(best.variant),
+        })
+      : t("msg.fishSelected", {
+          fish: fishName(best.variant, best.fid), stage: stageName(lang, stage),
+          progress: progText(best.progress), goal: stage === 0 ? STAGE_MEDIO : STAGE_ADULTO,
+          sick: best.sick ? t("msg.fishNeedsMedicineSuffix") : "",
+        }));
   } else {
     state.patch({ selectedFid: null });
   }
@@ -248,10 +272,17 @@ function sellFish(ctx: GameContext, fid: number): void {
   const price = sellPriceFor(fish.variant);
   world.fishes.splice(idx, 1);
   const snap = state.getSnapshot();
-  state.patch({ selectedFid: null, coins: snap.coins + price, totalSold: snap.totalSold + 1 });
+  const leaderboardSoldByVariant = [...snap.leaderboardSoldByVariant];
+  leaderboardSoldByVariant[fish.variant] = (leaderboardSoldByVariant[fish.variant] ?? 0) + 1;
+  state.patch({
+    selectedFid: null,
+    coins: snap.coins + price,
+    totalSold: snap.totalSold + 1,
+    leaderboardSoldByVariant,
+  });
   gameBus.events.emit("fish:sold", { x: fish.x, y: fish.y, amount: price });
   gameBus.events.emit("wallet:flare", { amount: price });
-  say(`${fishName(fish.variant, fish.fid)} vendido por ◎${price}! Use as moedas para escolher seu próximo peixe`);
+  sayT(ctx, "msg.fishSold", { fish: fishName(fish.variant, fish.fid), price });
   emitFishes(world);
 }
 
@@ -260,24 +291,30 @@ function buyFish(ctx: GameContext, variant: number): void {
   const offer = FISH_OFFER_BY_VARIANT[variant];
   const snap = state.getSnapshot();
   if (!offer || !KOI_VARIANTS[variant]) return;
-  const requirement = fishRequirementProgress(offer.requirement, snap, world.fishes.length);
+  const lang = snap.idioma;
+  const t = makeT(lang);
+  const requirement = fishRequirementProgress(offer.requirement, snap, world.fishes.length, lang);
   if (!requirement.met) {
-    say(`🔒 ${offer.requirement?.kind === "level" ? "Nível incompleto" : "Conquista necessária"}: ${requirement.label}`);
+    say(t("msg.lockedBuy", {
+      reason: t(offer.requirement?.kind === "level" ? "msg.lockedLevel" : "msg.lockedCollection"),
+      label: requirement.label,
+    }));
     return;
   }
   const firstDiscovery = variant !== 0 && !snap.fishUnlocked.includes(variant);
   const fishUnlocked = firstDiscovery ? [...snap.fishUnlocked, variant] : snap.fishUnlocked;
   const price = fishPriceFor(offer, snap.bought);
   if (snap.coins < price) {
-    say(`◎${price} necessários — faltam ◎${price - snap.coins}`);
+    say(t("msg.coinsMissing", { price, missing: price - snap.coins }));
     return;
   }
   const fish = spawnPurchasedFish(world, variant);
   state.patch({ coins: snap.coins - price, fishUnlocked });
   emitFishes(world);
+  const name = variantName(lang, KOI_VARIANTS[variant]);
   say(firstDiscovery
-    ? `✨ Mistério revelado: ${KOI_VARIANTS[variant].name}! Um baby fish chegou ao lago`
-    : `${KOI_VARIANTS[variant].name} baby fish chegou ao lago (−◎${price})`);
+    ? t("msg.mysteryRevealed", { name })
+    : t("msg.babyArrived", { name, price }));
   gameBus.events.emit("fish:bought", { x: fish.x, y: fish.y });
 }
 
@@ -290,19 +327,19 @@ function medicateFish(ctx: GameContext, fid: number): void {
     state.patch({ remedios: snap.remedios - 1 });
     if (snap.remedios - 1 <= 0) fallBackToCommon(ctx);
     fish.sick = false;
-    say(`${fishName(fish.variant, fish.fid)} curado com a mamadeira do estoque!`);
+    sayT(ctx, "msg.curedStock", { fish: fishName(fish.variant, fish.fid) });
     gameBus.events.emit("fish:cured", { fid });
     emitFishes(world);
     return;
   }
   const price = medPriceFor(snap.bought);
   if (snap.coins < price) {
-    say(`Mamadeira custa ◎${price} — venda peixes grandes para juntar moedas`);
+    sayT(ctx, "msg.medicinePrice", { price });
     return;
   }
   state.patch({ coins: snap.coins - price });
   fish.sick = false;
-  say(`${fishName(fish.variant, fish.fid)} curado com a mamadeira! (−◎${price})`);
+  sayT(ctx, "msg.curedBought", { fish: fishName(fish.variant, fish.fid), price });
   gameBus.events.emit("fish:cured", { fid });
   emitFishes(world);
 }
@@ -312,11 +349,11 @@ function buyRemedy(ctx: GameContext): boolean {
   const snap = state.getSnapshot();
   const price = medPriceFor(snap.bought);
   if (snap.coins < price) {
-    say(`Mamadeira custa ◎${price} — venda peixes grandes para juntar moedas`);
+    sayT(ctx, "msg.medicinePrice", { price });
     return false;
   }
   state.patch({ coins: snap.coins - price, remedios: snap.remedios + 1 });
-  say(`Mamadeira +1 no estoque (−◎${price}) — mire no peixe doente e solte para curar`);
+  sayT(ctx, "msg.remedyStocked", { price });
   return true;
 }
 
@@ -328,22 +365,22 @@ function buyScenery(ctx: GameContext, id: string): void {
   // desbloqueio sequencial: só a próxima peça da ordem pode ser comprada —
   // comprar e posicionar a anterior destrava a seguinte, mesmo no mesmo nível
   if (nextScenery(snap.bought)?.id !== id) {
-    say("🔒 Compre e posicione a peça anterior do lago para destravar esta");
+    sayT(ctx, "msg.pieceLocked");
     return;
   }
   if (snap.coins < item.price) {
-    say(`◎${item.price} necessários — venda peixes grandes para juntar moedas`);
+    sayT(ctx, "msg.coinsMissingSell", { price: item.price });
     return;
   }
   const bought = [...snap.bought, id];
   state.patch({ coins: snap.coins - item.price, bought });
   gameBus.events.emit("scenery:changed", { bought });
-  say(`✨ Novidade no lago: ${item.label}! (−◎${item.price})`);
+  sayT(ctx, "msg.newPiece", { name: sceneryName(snap.idioma, item.id), price: item.price });
   grantLevelRewards(ctx, bought);
 }
 
-// Ao posicionar a última peça de um nível, entrega a recompensa dele: espécies
-// liberadas na loja de peixes, baldes de ração comum ou potes de ração especial.
+// Ao posicionar a última peça de um nível, entrega ração comum e premium;
+// alguns níveis também liberam espécies na loja de peixes.
 function grantLevelRewards(ctx: GameContext, bought: string[]): void {
   const { state } = ctx;
   const snap = state.getSnapshot();
@@ -351,21 +388,24 @@ function grantLevelRewards(ctx: GameContext, bought: string[]): void {
   if (!done.length) return;
   let { food, premiumCount } = snap;
   const levelRewards = [...snap.levelRewards];
+  const lang = snap.idioma;
+  const t = makeT(lang);
   for (const level of done) {
     levelRewards.push(level);
+    food += LEVEL_COMMON_FEED_REWARD;
+    premiumCount += LEVEL_PREMIUM_FEED_REWARD;
     const reward = rewardForLevel(level);
-    if (!reward) continue;
-    if (reward.kind === "rations") {
-      const portions = reward.buckets * RATION_BUCKET;
-      food += portions;
-      say(`🎁 Nível ${level} completo: +${reward.buckets} ${reward.buckets === 1 ? "balde" : "baldes"} de ração (+${portions} porções)`);
-    } else if (reward.kind === "premium") {
-      const throwsCount = reward.pots * PREMIUM_POT_THROWS;
-      premiumCount += throwsCount;
-      say(`🎁 Nível ${level} completo: +${reward.pots} ${reward.pots === 1 ? "pote" : "potes"} de ração especial (+${throwsCount} arremessos premium)`);
+    if (reward?.kind === "fish") {
+      const names = reward.variants
+        .map((variant) => (KOI_VARIANTS[variant] ? variantName(lang, KOI_VARIANTS[variant]) : "?"))
+        .join(t("msg.and"));
+      say(t(reward.variants.length > 1 ? "msg.levelRewardFeedFishN" : "msg.levelRewardFeedFish1", {
+        level, common: LEVEL_COMMON_FEED_REWARD, premium: LEVEL_PREMIUM_FEED_REWARD, names,
+      }));
     } else {
-      const names = reward.variants.map((variant) => KOI_VARIANTS[variant]?.name ?? "?").join(" e ");
-      say(`🎁 Nível ${level} completo: ${names} ${reward.variants.length > 1 ? "disponíveis" : "disponível"} na loja de peixes!`);
+      say(t("msg.levelRewardFeed", {
+        level, common: LEVEL_COMMON_FEED_REWARD, premium: LEVEL_PREMIUM_FEED_REWARD,
+      }));
     }
   }
   state.patch({ levelRewards, food, premiumCount });
@@ -379,16 +419,21 @@ function claimDaily(ctx: GameContext): void {
     rewardClaimed: true,
     coins: snap.coins + ECONOMY.dailyReward.coins,
     food: snap.food + ECONOMY.dailyReward.rations,
+    leaderboardDailyRewards: snap.leaderboardDailyRewards + 1,
   });
-  say(`Recompensa diária: +${ECONOMY.dailyReward.coins} moedas`);
+  sayT(ctx, "msg.dailyReward", { coins: ECONOMY.dailyReward.coins });
 }
 
 function claimMission(ctx: GameContext): void {
   const { state } = ctx;
   const snap = state.getSnapshot();
   if (snap.missionClaimed || snap.missionFed < MISSION_GOAL) return;
-  state.patch({ missionClaimed: true, coins: snap.coins + MISSION_REWARD });
-  say(`Missão cumprida: +${MISSION_REWARD} moedas Koi`);
+  state.patch({
+    missionClaimed: true,
+    coins: snap.coins + MISSION_REWARD,
+    leaderboardMissionRewards: snap.leaderboardMissionRewards + 1,
+  });
+  sayT(ctx, "msg.missionDone", { coins: MISSION_REWARD });
 }
 
 function setFeed(ctx: GameContext, feed: FeedChoice): void {
@@ -396,7 +441,7 @@ function setFeed(ctx: GameContext, feed: FeedChoice): void {
   if (feed === "premium") {
     if (state.getSnapshot().premiumCount > 0) {
       state.patch({ feedSel: "premium" });
-      say("Ração especial selecionada — 1 porção vira o peixe médio • não adoece");
+      sayT(ctx, "msg.selectedPremium");
       return;
     }
     if (buyPremium(ctx)) state.patch({ feedSel: "premium" });
@@ -405,12 +450,12 @@ function setFeed(ctx: GameContext, feed: FeedChoice): void {
   if (feed === "remedio") {
     if (state.getSnapshot().remedios > 0 || buyRemedy(ctx)) {
       state.patch({ feedSel: "remedio" });
-      say("Mamadeira selecionada — segure, mire no peixe doente e solte");
+      sayT(ctx, "msg.selectedRemedy");
     }
     return;
   }
   state.patch({ feedSel: "comum" });
-  say("Ração comum: 3 porções viram médio • +5 viram grande");
+  sayT(ctx, "msg.selectedCommon");
 }
 
 // ===================== registro dos comandos =====================
@@ -421,27 +466,27 @@ export function registerActions(ctx: GameContext): () => void {
       if (snap.feedSel === "remedio") {
         const price = medPriceFor(snap.bought);
         if (snap.remedios <= 0 && snap.coins < price) {
-          say(`Mamadeira custa ◎${price} — venda peixes grandes para juntar moedas`);
+          sayT(ctx, "msg.medicinePrice", { price });
           return;
         }
         ctx.world.aiming = true;
-        say("Solte a mamadeira em cima do peixe doente");
+        sayT(ctx, "msg.releaseRemedyAim");
         return;
       }
       if (snap.feedSel === "premium") {
         if (snap.premiumCount > 0) {
           ctx.world.aiming = true;
-          say("Os peixes próximos já estão de olho…");
+          sayT(ctx, "msg.fishWatching");
           return;
         }
         // especial acabou: cai para a comum em vez de deixar o botão morto
-        say("Ração especial acabou — usando a comum");
+        sayT(ctx, "msg.premiumRanOutCommon");
         fallBackToCommon(ctx);
       }
       // daqui em diante a seleção é a comum: o estoque que importa é o do balde
       if (!ensureCommonRations(ctx)) return;
       ctx.world.aiming = true;
-      say("Os peixes próximos já estão de olho…");
+      sayT(ctx, "msg.fishWatching");
     }),
     gameBus.commands.on("aim:move", ({ x, y }) => {
       ctx.world.aim = {

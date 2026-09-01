@@ -24,6 +24,10 @@ export default defineConfig([
     },
   },
   {
+    files: ["api/**/*.ts"],
+    languageOptions: { globals: globals.node },
+  },
+  {
     // The simulation and rules layer must stay engine-agnostic so it stays
     // unit-testable and can be reasoned about without a running game.
     files: ["src/game/systems/**/*.ts", "src/game/state/**/*.ts", "src/game/data/**/*.ts"],

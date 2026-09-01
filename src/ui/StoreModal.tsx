@@ -53,7 +53,7 @@ export function StoreModal({ state, onClose }: { state: PlayerSnapshot; onClose:
       <section className="store-modal" role="dialog" aria-modal="true" aria-label={t("store.aria")}>
         <header>
           <div>
-            <small>KOI CAFÉ</small>
+            <small>CARP CAFÉ</small>
             <h2>{t("store.heading")}</h2>
             <p>{t("store.sub")}</p>
           </div>
@@ -79,10 +79,9 @@ export function StoreModal({ state, onClose }: { state: PlayerSnapshot; onClose:
             id="store-packages-tab"
             type="button"
             role="tab"
-            aria-selected={tab === "packages"}
+            aria-selected={false}
             aria-controls="store-packages-panel"
-            className={tab === "packages" ? "active" : ""}
-            onClick={() => setTab("packages")}
+            disabled
           >
             {t("store.tabPackages")}
           </button>

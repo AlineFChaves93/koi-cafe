@@ -7,9 +7,9 @@ import { SceneryPiece } from "../entities/SceneryPiece";
 import { WaterLayer } from "../entities/WaterLayer";
 import { spawnCoinFountain, spawnSplash } from "../entities/effects";
 import { FISH_OFFERS, fishRequirementProgress, sellPriceFor } from "../data/fishShop";
-import { STAGE_ADULTO, STAGE_MEDIO, STAGE_NAMES } from "../data/economy";
+import { STAGE_ADULTO, STAGE_MEDIO } from "../data/economy";
 import { SCENERY } from "../data/scenery";
-import { KOI_VARIANTS, VARIANT_NAMES } from "../data/variants";
+import { KOI_VARIANTS } from "../data/variants";
 import { gameBus } from "../events";
 import { makeT, stageName, variantName } from "../i18n";
 import { gameState } from "../state/GameState";
@@ -272,11 +272,15 @@ export class PondScene extends Phaser.Scene {
   private handleSimEvent(event: SimEvent): void {
     if (event.type === "fish:grew") {
       spawnSplash(this, event.x, event.y, true);
+      const lang = gameState.getSnapshot().idioma;
+      const t = makeT(lang);
       gameBus.events.emit("message", {
         text:
           event.stage === 2
-            ? `${fishName(event.variant, event.fid)} virou ${STAGE_NAMES[2]} — vale ◎${sellPriceFor(event.variant)} na venda!`
-            : `${fishName(event.variant, event.fid)} cresceu: ${STAGE_NAMES[event.stage]}!`,
+            ? t("msg.grewAdult", {
+                fish: fishName(event.variant, event.fid), stage: stageName(lang, 2), price: sellPriceFor(event.variant),
+              })
+            : t("msg.grewStage", { fish: fishName(event.variant, event.fid), stage: stageName(lang, event.stage) }),
       });
     } else if (event.type === "collection:unlocked") {
       const snap = gameState.getSnapshot();
@@ -289,15 +293,19 @@ export class PondScene extends Phaser.Scene {
           if (offer.requirement?.kind !== "collection" || snap.fishUnlocked.includes(offer.variant)) return false;
           return fishRequirementProgress(offer.requirement, { ...snap, collection }, 0).met;
         });
+        const lang = snap.idioma;
+        const t = makeT(lang);
         this.time.addEvent({
           delay: 1400,
           callback: () => {
-            gameBus.events.emit("message", { text: `★ ${VARIANT_NAMES[event.variant]} entrou na sua coleção!` });
+            gameBus.events.emit("message", {
+              text: t("msg.collectionJoined", { name: variantName(lang, KOI_VARIANTS[event.variant]) }),
+            });
             for (const offer of newlyReady) {
               this.time.addEvent({
                 delay: 1100,
                 callback: () => gameBus.events.emit("message", {
-                  text: `🎁 Conquista de colecionador: ${KOI_VARIANTS[offer.variant].name} disponível na loja de peixes!`,
+                  text: t("msg.collectorAchievement", { name: variantName(lang, KOI_VARIANTS[offer.variant]) }),
                 }),
               });
             }
@@ -317,7 +325,7 @@ export class PondScene extends Phaser.Scene {
       if (!this.coinHintShown) {
         this.coinHintShown = true;
         gameBus.events.emit("message", {
-          text: "Uma moeda atravessa o lago na correnteza — toque nela para pescar!",
+          text: makeT(gameState.getSnapshot().idioma)("msg.driftCoinHint"),
         });
       }
     }
@@ -344,10 +352,10 @@ export class PondScene extends Phaser.Scene {
     }
   }
 
-  // símbolo "curado": pílula verde "✓ CURADO" que sobe do peixe e desaparece
+  // símbolo "curado": pílula verde "✓ HEALED" que sobe do peixe e desaparece
   private showCuredFx(x: number, y: number, len: number): void {
     const label = this.add
-      .text(0, 0, "✓ CURADO", {
+      .text(0, 0, makeT(gameState.getSnapshot().idioma)("msg.curedBadge"), {
         fontFamily: "Arial, Helvetica, sans-serif",
         fontSize: `${Math.round(Math.max(12, len * 0.24))}px`,
         fontStyle: "bold",

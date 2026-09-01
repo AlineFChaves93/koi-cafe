@@ -1,4 +1,4 @@
-# Koi Café
+# Carp Café
 
 Um jogo 2D de alimentar carpas visto de cima: mire perto de um peixe para
 alimentar só ele, cresça o cardume, colecione espécies e monte o lago na Loja
@@ -18,6 +18,20 @@ npm test           # vitest (economia, save, simulação)
 npm run lint
 npm run build      # dist/ estático (deployável em qualquer host estático)
 ```
+
+## Ranking mundial
+
+O ranking usa `api/leaderboard.ts`, uma única Vercel Function, e a tabela
+Postgres criada automaticamente no primeiro acesso. No painel do projeto na
+Vercel, instale a integração Neon e conecte-a ao projeto; ela injeta
+`DATABASE_URL` sem colocar credenciais no cliente. O jogo continua funcionando
+normalmente quando o banco está indisponível.
+
+A pontuação é a renda bruta conquistada desde o lançamento do ranking: vendas
+de carpas, recompensas diárias, missões e moedas resgatadas da correnteza. Compras
+não diminuem a pontuação. A Function recalcula esse total a partir dos
+contadores, exige progressão monotônica e recusa saltos incompatíveis com o
+tempo decorrido.
 
 Flags de desenvolvimento: `?autostart` pula a intro, `?cenacompleta` monta o
 lago com todas as peças em uma sessão de pré-visualização que nunca altera o

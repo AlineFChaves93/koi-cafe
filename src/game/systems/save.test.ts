@@ -16,7 +16,7 @@ describe("save system", () => {
     const save = freshSave();
     expect(save.player).toMatchObject({
       coins: 30,
-      food: 2,
+      food: 20,
       premium: 1,
       remedios: 1,
     });
@@ -69,7 +69,7 @@ describe("save system", () => {
     expect(loaded.player).toMatchObject({
       starterKitVersion: 8,
       coins: 30,
-      food: 2,
+      food: 20,
       premium: 1,
       remedios: 1,
       xp: 42,

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { gameBus } from "@/game/events";
-import { DAILY_LIMIT } from "@/game/data/economy";
-import { SCENERY } from "@/game/data/scenery";
+import { DAILY_LIMIT, RATION_BUCKET } from "@/game/data/economy";
+import { LEVEL_COMMON_FEED_REWARD, LEVEL_PREMIUM_FEED_REWARD, SCENERY } from "@/game/data/scenery";
 import { GameState } from "@/game/state/GameState";
 import { registerActions } from "@/game/systems/actions";
 import { createWorld, makeFish } from "@/game/systems/fishSim";
@@ -29,7 +29,7 @@ describe("buy store supplies", () => {
     expect(state.getSnapshot()).toMatchObject({ coins: 24, food: initialFood + 1 });
 
     gameBus.commands.emit("buy-bucket");
-    expect(state.getSnapshot()).toMatchObject({ coins: 19, food: initialFood + 101 });
+    expect(state.getSnapshot()).toMatchObject({ coins: 19, food: initialFood + 1 + RATION_BUCKET });
 
     gameBus.commands.emit("buy-premium");
     expect(state.getSnapshot()).toMatchObject({ coins: 9, premiumCount: initialPremium + 1 });
@@ -112,19 +112,32 @@ describe("buy scenery levels", () => {
     dispose();
   });
 
-  it("grants ration buckets on levels 3/4 and a premium pot on level 6", () => {
+  it("grants 15 common and three premium feed on every completed level", () => {
     const { state, dispose } = setup();
     const ids = SCENERY.map((item) => item.id);
     // tudo até a ponte (nível 3) posicionado; falta o nível 4
     const untilLevel3 = ids.slice(0, 4);
     state.patch({ bought: ids.slice(0, 3), levelRewards: [1, 2], coins: 500, food: 0, premiumCount: 0 });
-    buy(untilLevel3[3]); // ponte completa o nível 3 → +1 balde (100 porções)
-    expect(state.getSnapshot().food).toBe(100);
+    buy(untilLevel3[3]);
+    expect(state.getSnapshot()).toMatchObject({
+      food: LEVEL_COMMON_FEED_REWARD,
+      premiumCount: LEVEL_PREMIUM_FEED_REWARD,
+    });
     expect(state.getSnapshot().levelRewards).toEqual([1, 2, 3]);
 
-    state.patch({ bought: ids.slice(0, 7), levelRewards: [1, 2, 3, 4, 5], coins: 500 });
-    buy(ids[7]); // cerca-dir completa o nível 6 → +1 pote premium (+3 arremessos)
-    expect(state.getSnapshot().premiumCount).toBe(3);
+    buy(ids[4]);
+    expect(state.getSnapshot()).toMatchObject({
+      food: LEVEL_COMMON_FEED_REWARD * 2,
+      premiumCount: LEVEL_PREMIUM_FEED_REWARD * 2,
+    });
+    expect(state.getSnapshot().levelRewards).toEqual([1, 2, 3, 4]);
+
+    state.patch({ bought: ids.slice(0, 7), levelRewards: [1, 2, 3, 4, 5], coins: 500, food: 0, premiumCount: 0 });
+    buy(ids[7]);
+    expect(state.getSnapshot()).toMatchObject({
+      food: LEVEL_COMMON_FEED_REWARD,
+      premiumCount: LEVEL_PREMIUM_FEED_REWARD,
+    });
     expect(state.getSnapshot().levelRewards).toEqual([1, 2, 3, 4, 5, 6]);
     dispose();
   });

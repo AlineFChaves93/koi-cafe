@@ -2,8 +2,8 @@
 // As peças formam 7 níveis sequenciais: a próxima peça só destrava quando a
 // anterior é comprada E posicionada no lago (a compra já posiciona na montagem,
 // então "bought" = "no lago"). Ao completar um nível — todas as peças dele no
-// lago — o jogador leva a recompensa do nível (nova espécie de peixe, baldes
-// de ração comum ou potes de ração especial).
+// lago — o jogador recebe ração comum e premium, além de uma nova espécie nos
+// níveis que desbloqueiam peixes.
 //
 // Positions are viewport percentages (x/y relative to canvas center, w relative
 // to canvas width) exactly as the previous CSS layout expressed them.
@@ -34,22 +34,22 @@ export const SCENERY: SceneryItem[] = [
 export const SCENERY_BY_ID = Object.fromEntries(SCENERY.map((item) => [item.id, item])) as Record<string, SceneryItem>;
 
 // ===================== níveis e recompensas =====================
-// fish: espécies liberadas na loja de peixes (a do nível 7 fecha a coleção);
-// rations: baldes de ração comum (porções); premium: potes de ração especial.
-export type LevelReward =
-  | { kind: "fish"; variants: number[] }
-  | { kind: "rations"; buckets: number }
-  | { kind: "premium"; pots: number };
+// Todo nível concede ração comum e premium. Alguns níveis também liberam
+// espécies na loja de peixes (a do nível 7 fecha a coleção).
+export const LEVEL_COMMON_FEED_REWARD = 15;
+export const LEVEL_PREMIUM_FEED_REWARD = 3;
 
-export type SceneryLevel = { level: number; reward: LevelReward };
+export type LevelReward = { kind: "fish"; variants: number[] };
+
+export type SceneryLevel = { level: number; reward?: LevelReward };
 
 export const SCENERY_LEVELS: readonly SceneryLevel[] = [
   { level: 1, reward: { kind: "fish", variants: [1] } },
   { level: 2, reward: { kind: "fish", variants: [2] } },
-  { level: 3, reward: { kind: "rations", buckets: 1 } },
-  { level: 4, reward: { kind: "rations", buckets: 2 } },
+  { level: 3 },
+  { level: 4 },
   { level: 5, reward: { kind: "fish", variants: [3] } },
-  { level: 6, reward: { kind: "premium", pots: 1 } },
+  { level: 6 },
   { level: 7, reward: { kind: "fish", variants: [4] } },
 ] as const;
 

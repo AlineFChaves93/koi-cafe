@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { SCENERY } from "@/game/data/scenery";
 import { KOI_VARIANTS } from "@/game/data/variants";
 import { GameState } from "@/game/state/GameState";
-import { PLAYER_KEY, freshSave, type Storage } from "@/game/systems/save";
+import { ALL_SAVE_KEYS, PLAYER_KEY, freshSave, type Storage } from "@/game/systems/save";
 
 class TrackingStorage implements Storage {
   writes = 0;
@@ -17,6 +17,10 @@ class TrackingStorage implements Storage {
   setItem(key: string, value: string): void {
     this.writes += 1;
     this.values.set(key, value);
+  }
+
+  removeItem(key: string): void {
+    this.values.delete(key);
   }
 }
 
@@ -65,5 +69,39 @@ describe("GameState initialization", () => {
 
     expect(seen).toContainEqual({ coins: 500, premiumCount: 7 });
     unsubscribe();
+  });
+
+  it("persists player identity across initialization", () => {
+    vi.useFakeTimers();
+    const storage = new TrackingStorage();
+    const firstSession = new GameState();
+    firstSession.initialize(storage);
+    const leaderboardId = firstSession.getSnapshot().leaderboardId;
+
+    firstSession.patch({ playerName: "Mika" });
+    firstSession.saveNow();
+
+    const refreshedSession = new GameState();
+    refreshedSession.initialize(storage);
+    expect(refreshedSession.getSnapshot()).toMatchObject({ playerName: "Mika", leaderboardId });
+  });
+
+  it("clears every save generation and forgets leaderboard identity", () => {
+    vi.useFakeTimers();
+    const storage = new TrackingStorage();
+    for (const key of ALL_SAVE_KEYS) storage.setItem(key, JSON.stringify({ legacy: true }));
+    storage.setItem(PLAYER_KEY, JSON.stringify({
+      ...freshSave(),
+      player: { ...freshSave().player, playerName: "Mika", leaderboardId: "player-1234567890" },
+    }));
+    const state = new GameState();
+    state.initialize(storage);
+
+    state.clearSave();
+
+    for (const key of ALL_SAVE_KEYS) expect(storage.getItem(key)).toBeNull();
+    expect(state.getSnapshot()).toMatchObject({ playerName: "", leaderboardId: "", coins: 30, xp: 0 });
+    vi.advanceTimersByTime(1_000);
+    expect(storage.getItem(PLAYER_KEY)).toBeNull();
   });
 });

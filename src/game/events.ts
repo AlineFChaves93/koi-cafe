@@ -32,6 +32,10 @@ export type PlayerSnapshot = {
   collection: number[]; bought: string[];
   fishUnlocked: number[];
   levelRewards: number[];
+  playerName: string; leaderboardId: string;
+  leaderboardSoldByVariant: number[];
+  leaderboardDailyRewards: number; leaderboardMissionRewards: number;
+  leaderboardDriftCoins: number;
   feedSel: FeedChoice; som: boolean; idioma: "pt" | "en";
   selectedFid: number | null;
 };

@@ -7,6 +7,7 @@
 import { DAILY_LIMIT, ECONOMY, STARTING_INVENTORY } from "../data/economy";
 import { completedLevels } from "../data/scenery";
 import { dayKey, type FeedChoice } from "../types";
+import { emptySoldByVariant } from "../../leaderboard/score";
 
 export interface Storage {
   getItem(key: string): string | null;
@@ -18,7 +19,8 @@ export const PLAYER_KEY = "koi-cafe-player-v5";
 export const V4_PLAYER_KEY = "koi-cafe-player-v4";
 export const LEGACY_PLAYER_KEY = "koi-cafe-player-v3";
 export const LEGACY_SCENERY_KEY = "koi-cafe-scenery-v1";
-// revisão 8: kit da primeira jogada = 30 moedas, ×2 punhados de ração comum,
+export const ALL_SAVE_KEYS = [PLAYER_KEY, V4_PLAYER_KEY, LEGACY_PLAYER_KEY, LEGACY_SCENERY_KEY] as const;
+// revisão 8: kit da primeira jogada = 30 moedas, 20 porções de ração comum,
 // ×1 porção de ração especial e ×1 mamadeira; o lago recomeça apenas com
 // os 3 baby fish da espécie básica.
 export const STARTER_KIT_VERSION = 8;
@@ -37,6 +39,10 @@ export type SaveData = {
     collection: number[];
     fishUnlocked: number[];
     levelRewards: number[];
+    playerName: string; leaderboardId: string;
+    leaderboardSoldByVariant: number[];
+    leaderboardDailyRewards: number; leaderboardMissionRewards: number;
+    leaderboardDriftCoins: number;
     som: boolean; idioma: "pt" | "en";
     food: number;
   };
@@ -51,7 +57,7 @@ export function freshSave(date = dayKey()): SaveData {
     version: 5,
     date,
     player: {
-      // primeira jogada: 30 moedas, ×2 punhados, ×1 ração especial
+      // primeira jogada: 30 moedas, 20 porções comuns, ×1 ração especial
       // e ×1 mamadeira
       starterKitVersion: STARTER_KIT_VERSION,
       coins: startCoins, xp: 0, streak: 1,
@@ -60,7 +66,11 @@ export function freshSave(date = dayKey()): SaveData {
       premium: STARTING_INVENTORY.specialRations,
       remedios: STARTING_INVENTORY.remedyBottles,
       collection: [], fishUnlocked: [0], levelRewards: [],
-      som: true, idioma: "pt",
+      playerName: "", leaderboardId: "",
+      leaderboardSoldByVariant: emptySoldByVariant(),
+      leaderboardDailyRewards: 0, leaderboardMissionRewards: 0,
+      leaderboardDriftCoins: 0,
+      som: true, idioma: "en",
       food: STARTING_INVENTORY.commonRations,
     },
     fishes: [],
@@ -104,8 +114,14 @@ function migrateV3(raw: LegacyV3, sceneryFromLegacyKey: string[]): SaveData | nu
       collection: Array.isArray(raw.collection) ? raw.collection : [],
       fishUnlocked: [0],
       levelRewards: completedLevels(sceneryFromLegacyKey),
+      playerName: "",
+      leaderboardId: "",
+      leaderboardSoldByVariant: emptySoldByVariant(),
+      leaderboardDailyRewards: 0,
+      leaderboardMissionRewards: 0,
+      leaderboardDriftCoins: 0,
       som: raw.som ?? true,
-      idioma: raw.idioma === "en" ? "en" : "pt",
+      idioma: raw.idioma === "pt" ? "pt" : "en",
       food: raw.food ?? DAILY_LIMIT,
     },
     fishes,
