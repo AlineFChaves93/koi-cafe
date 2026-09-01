@@ -14,7 +14,8 @@ export const ANIMS: Record<Exclude<AnimName, "turnL">, AnimMeta> = {
   idle: { row: 2, frames: 12, fps: 6, loop: true },
   turnR: { row: 3, frames: 12, fps: 10, loop: false },
   bob: { row: 4, frames: 12, fps: 10, loop: true },
-  eat: { row: 5, frames: 12, fps: 12, loop: true },
+  // Stop on the original third-to-last frame; the last two poses are not used.
+  eat: { row: 5, frames: 10, fps: 12, loop: true },
 };
 
 // Atlases whose source sheets had fewer sprites per row; playing the default

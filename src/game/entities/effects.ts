@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { COIN_KEY } from "../scenes/BootScene";
 
 // Splash do arremesso + splash de crescimento (porta dos .splash CSS).
 const RING_LIFETIME = 950;
@@ -42,4 +43,41 @@ export function spawnSplash(scene: Phaser.Scene, x: number, y: number, grow: boo
   }
 
   scene.time.delayedCall(RING_LIFETIME, () => objects.forEach((o) => o.destroy()));
+}
+
+export function spawnCoinFountain(scene: Phaser.Scene, x: number, y: number, amount: number): void {
+  const coins: Phaser.GameObjects.Sprite[] = [];
+  const count = 9;
+  for (let i = 0; i < count; i++) {
+    // mesmo disco achatado da moeda da correnteza; o giro de ângulo lê como
+    // a moeda girando no ar
+    const coin = scene.add.sprite(x, y, COIN_KEY).setDepth(45).setAlpha(0);
+    coin.setDisplaySize(20, 10);
+    coins.push(coin);
+    const angle = -Math.PI * (0.16 + (i / (count - 1)) * 0.68);
+    const distance = 55 + (i % 3) * 14;
+    scene.tweens.add({
+      targets: coin,
+      x: x + Math.cos(angle) * distance,
+      y: y + Math.sin(angle) * distance,
+      alpha: { from: 0, to: 1 },
+      scale: { from: 0.45, to: 1.05 },
+      angle: (i % 2 ? 1 : -1) * (120 + i * 18),
+      duration: 430,
+      delay: i * 28,
+      ease: "Cubic.Out",
+      yoyo: true,
+      hold: 90,
+      onComplete: () => coin.destroy(),
+    });
+  }
+  const value = scene.add.text(x, y - 18, `+◎${amount}`, {
+    fontFamily: "Arial, Helvetica, sans-serif",
+    fontSize: "18px",
+    fontStyle: "bold",
+    color: "#ffe2a8",
+    stroke: "#6d4314",
+    strokeThickness: 4,
+  }).setOrigin(0.5).setDepth(46);
+  scene.tweens.add({ targets: value, y: y - 80, alpha: 0, duration: 1100, ease: "Cubic.Out", onComplete: () => value.destroy() });
 }

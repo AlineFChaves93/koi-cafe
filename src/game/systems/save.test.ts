@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  LEGACY_PLAYER_KEY, LEGACY_SCENERY_KEY, PLAYER_KEY,
+  LEGACY_PLAYER_KEY, LEGACY_SCENERY_KEY, PLAYER_KEY, V4_PLAYER_KEY,
   applyDailyCycle, freshSave, readSave, writeSave, type Storage,
 } from "@/game/systems/save";
 import { dayKey } from "@/game/types";
@@ -12,11 +12,21 @@ class MemoryStorage implements Storage {
 }
 
 describe("save system", () => {
+  it("starts the first play with the promised free resources", () => {
+    const save = freshSave();
+    expect(save.player).toMatchObject({
+      coins: 30,
+      food: 2,
+      premium: 1,
+      remedios: 1,
+    });
+  });
+
   it("round-trips through storage", () => {
     const storage = new MemoryStorage();
     const save = {
       ...freshSave(),
-      player: { ...freshSave().player, coins: 77, xp: 130, premium: 2 },
+      player: { ...freshSave().player, coins: 77, xp: 130, premium: 2, levelRewards: [1, 2] },
       fishes: [
         { variant: 0, progress: 3, sick: false },
         { variant: 3, progress: 10, sick: true },
@@ -28,8 +38,58 @@ describe("save system", () => {
     expect(loaded.player.coins).toBe(77);
     expect(loaded.player.xp).toBe(130);
     expect(loaded.player.premium).toBe(2);
+    expect(loaded.player.levelRewards).toEqual([1, 2]);
     expect(loaded.fishes).toEqual(save.fishes);
     expect(loaded.scenery).toEqual(["ponte", "arvore"]);
+  });
+
+  it("updates an existing save to the visible starter kit once", () => {
+    const storage = new MemoryStorage();
+    const current = freshSave();
+    const { starterKitVersion, ...playerWithoutStarterKitVersion } = current.player;
+    void starterKitVersion;
+    storage.setItem(PLAYER_KEY, JSON.stringify({
+      ...current,
+      scenery: ["samambaia-a", "pad-esq"],
+      fishes: [
+        { variant: 0, progress: 8, sick: false },
+        { variant: 2, progress: 3, sick: true },
+      ],
+      player: {
+        ...playerWithoutStarterKitVersion,
+        coins: 0,
+        food: 100,
+        premium: 2,
+        remedios: 0,
+        xp: 42,
+      },
+    }));
+
+    const loaded = readSave(storage);
+    expect(loaded.player).toMatchObject({
+      starterKitVersion: 8,
+      coins: 30,
+      food: 2,
+      premium: 1,
+      remedios: 1,
+      xp: 42,
+    });
+    expect(loaded.player.levelRewards).toEqual([]);
+    expect(loaded.scenery).toEqual([]);
+    // a revisão do kit recomeça o lago: apenas os 3 baby fish iniciais
+    expect(loaded.fishes).toEqual([]);
+  });
+
+  it("migrates v4 saves, claiming levels already completed by the scenery", () => {
+    const storage = new MemoryStorage();
+    const v4 = { ...freshSave(), version: 4 as const, scenery: ["samambaia-a", "pad-esq", "arvore"] };
+    storage.setItem(V4_PLAYER_KEY, JSON.stringify(v4));
+    const loaded = readSave(storage);
+    expect(loaded.version).toBe(5);
+    // samambaia + nenúfar completam o nível 1; a árvore sozinha fecha o nível 2
+    expect(loaded.player.levelRewards).toEqual([1, 2]);
+    expect(loaded.scenery).toEqual(["samambaia-a", "pad-esq", "arvore"]);
+    expect(loaded.player.coins).toBe(v4.player.coins);
   });
 
   it("migrates the v3 positional arrays into named fishes", () => {
@@ -45,7 +105,7 @@ describe("save system", () => {
     }));
     storage.setItem(LEGACY_SCENERY_KEY, JSON.stringify(["ponte"]));
     const loaded = readSave(storage);
-    expect(loaded.version).toBe(4);
+    expect(loaded.version).toBe(5);
     // v3 implied variant = i % 6 at spawn time
     expect(loaded.fishes).toEqual([
       { variant: 0, progress: 2, sick: false },

@@ -1,6 +1,6 @@
 // Typed event bus between the game core and the React UI overlay.
 // Commands flow UI → game; events flow game → UI. Nothing crosses back.
-import type { FeedKind, FishView } from "./types";
+import type { FeedChoice, FishView } from "./types";
 
 export type CommandMap = {
   "aim:start": void;
@@ -10,22 +10,29 @@ export type CommandMap = {
   "tap": { x: number; y: number };
   "select-fish": { fid: number | null };
   "sell-fish": { fid: number };
+  "buy-fish": { variant: number };
   "medicate-fish": { fid: number };
   "buy-scenery": { id: string };
+  "buy-common": void;
+  "buy-bucket": void;
   "buy-premium": void;
   "buy-remedy": void;
   "claim-daily": void;
   "claim-mission": void;
-  "set-feed": { feed: FeedKind };
+  // escolhe o item do console — só isso; o arremesso vem do botão central
+  "set-feed": { feed: FeedChoice };
 };
 
 export type PlayerSnapshot = {
   food: number; coins: number; xp: number; streak: number;
   rewardClaimed: boolean; totalFed: number;
+  totalSold: number;
   missionFed: number; missionClaimed: boolean;
   premiumCount: number; remedios: number;
   collection: number[]; bought: string[];
-  feedSel: FeedKind; som: boolean; idioma: "pt" | "en";
+  fishUnlocked: number[];
+  levelRewards: number[];
+  feedSel: FeedChoice; som: boolean; idioma: "pt" | "en";
   selectedFid: number | null;
 };
 
@@ -34,7 +41,14 @@ export type EventMap = {
   "state:changed": PlayerSnapshot;
   "fishes:changed": { fishes: FishView[] };
   "feed:thrown": { xPct: number; yPct: number; premium: boolean };
+  // mamadeira lançada pelo botão central: voa do menino até o peixe doente
+  "remedy:thrown": { fid: number; x: number; y: number };
   "scenery:changed": { bought: string[] };
+  "fish:sold": { x: number; y: number; amount: number };
+  "fish:bought": { x: number; y: number };
+  "fish:cured": { fid: number };
+  "coin:collected": { x: number; y: number; amount: number };
+  "wallet:flare": { amount: number };
 };
 
 // void payloads become zero-argument calls at the type level.

@@ -5,7 +5,7 @@ export type KoiVariant = { key: string; name: string; file: string; color: strin
 export const KOI_VARIANTS: readonly KoiVariant[] = [
   { key: "platinum-ogon", name: "Platina", file: "/assets/koi/platinum-ogon.webp", color: "#f2f4f8" },
   { key: "hi-utsuri", name: "Hi Utsuri", file: "/assets/koi/hi-utsuri-v2.webp", color: "#e95b27" },
-  { key: "showa", name: "Showa", file: "/assets/koi/showa-v3.webp", color: "#e54818" },
+  { key: "yamabuki-ogon", name: "Yamabuki Ogon", file: "/assets/koi/yamabuki-ogon.webp", color: "#dcbf3c" },
   { key: "sanke", name: "Sanke", file: "/assets/koi/sanke-v2.webp", color: "#e94b2b" },
   { key: "kohaku", name: "Kohaku", file: "/assets/koi/kohaku.webp", color: "#ef765e" },
   { key: "tancho", name: "Tancho", file: "/assets/koi/tancho.webp", color: "#d94949" },

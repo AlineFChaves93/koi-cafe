@@ -6,11 +6,17 @@
 // drains the event queue afterwards (FX, messages, state). No DOM, no React,
 // no Phaser — this module is unit-testable headless.
 import { ANIMS } from "../data/animations";
-import { EAT_RATE, FISH_VIEWPORT_RATIO, STAGE_ADULTO } from "../data/economy";
+import { DRIFT_COIN, EAT_RATE, FISH_VIEWPORT_RATIO, STAGE_ADULTO } from "../data/economy";
 import { KOI_VARIANTS } from "../data/variants";
 import { growthValue, sizeFactor, stageOf } from "./economy";
 import type { SavedFish } from "./save";
 import { angleDiff, TAU, type Fish, type SimWorld, type WorldPellet } from "../types";
+
+// Keep reactions local so the school does not cross the pond for every throw.
+const FOOD_DETECTION_RATIO = 0.28;
+const AIM_DETECTION_RATIO = 0.5;
+const SEEK_BOB_RADIUS = 1.5;
+const CURIOUS_BOB_RADIUS = 2;
 
 export function createWorld(reduced: boolean): SimWorld {
   return {
@@ -20,8 +26,11 @@ export function createWorld(reduced: boolean): SimWorld {
     aim: { x: 0, y: 0 },
     pellets: new Map(),
     throws: new Map(),
+    driftCoin: null,
+    driftCoinTimer: DRIFT_COIN.firstDelaySeconds,
     fishes: [],
     nextId: 0,
+    comumThrows: 0,
     reduced,
     events: [],
   };
@@ -32,7 +41,9 @@ export const fishLen = (world: SimWorld, scale: number) =>
 
 export function makeFish(world: SimWorld, opts: { variant?: number; progress?: number; sick?: boolean } = {}): Fish {
   const i = world.fishes.length;
-  const scale = 0.55 + (i % 5) * 0.075;
+  // The previous 0.55 minimum made mini fish nearly disappear. This keeps
+  // some natural size variation while making the smallest base size 50% larger.
+  const scale = 0.825 + (i % 5) * 0.075;
   const ang = Math.random() * TAU;
   const rad = world.platform.r * 1.45 + Math.random() * Math.min(world.w, world.h) * 0.1;
   const x = world.platform.x + Math.cos(ang) * rad;
@@ -53,12 +64,16 @@ export function makeFish(world: SimWorld, opts: { variant?: number; progress?: n
   };
 }
 
+// Primeira jogada: o lago começa com apenas 3 baby fish da espécie básica.
+export const FIRST_PLAY_FISH = 3;
+
 export function spawnSchool(world: SimWorld, saved?: SavedFish[]): void {
-  const count = Math.min(world.w, world.h) < 520 ? 17 : Math.max(12, saved?.length ?? 12);
+  // com save restauramos exatamente os peixes salvos; sem save, primeira jogada
+  const count = saved ? saved.length : FIRST_PLAY_FISH;
   for (let i = 0; i < count; i++) {
     const restored = saved?.[i];
     const fish = makeFish(world, restored ?? {});
-    fish.variant = restored?.variant ?? i % KOI_VARIANTS.length;
+    fish.variant = restored?.variant ?? 0;
     const ang = (i / count) * TAU + Math.random() * 0.5;
     const rad = world.platform.r * 1.45 + Math.random() * Math.min(world.w, world.h) * 0.1;
     fish.x = world.platform.x + Math.cos(ang) * rad;
@@ -69,9 +84,9 @@ export function spawnSchool(world: SimWorld, saved?: SavedFish[]): void {
   }
 }
 
-// Reposição após venda: um peixe MINI de espécie aleatória chega ao lago.
-export function spawnReplacement(world: SimWorld): Fish {
-  const fish = makeFish(world, { variant: Math.floor(Math.random() * KOI_VARIANTS.length), progress: 0, sick: false });
+// Fish bought in the lake shop arrive as BABY FISH.
+export function spawnPurchasedFish(world: SimWorld, variant: number): Fish {
+  const fish = makeFish(world, { variant, progress: 0, sick: false });
   world.fishes.push(fish);
   return fish;
 }
@@ -84,7 +99,8 @@ const steer = (f: Fish, desired: number, turnRate: number, dt: number) => {
 export function stepFishSim(world: SimWorld, dt: number, nowMs: number): void {
   const now = nowMs;
   const w = world;
-  const perception = Math.hypot(w.w, w.h) * 0.55;
+  const foodDetectionRadius = Math.min(w.w, w.h) * FOOD_DETECTION_RATIO;
+  const aimDetectionRadius = Math.min(w.w, w.h) * AIM_DETECTION_RATIO;
   const finished: number[] = [];
   for (const p of w.pellets.values()) p.eaters = 0;
   for (const f of w.fishes) {
@@ -102,9 +118,9 @@ export function stepFishSim(world: SimWorld, dt: number, nowMs: number): void {
       const d = Math.hypot(f.x - p.x, f.y - p.y);
       if (d < nd) { nd = d; nearest = p; nid = pid; }
     }
-    if (nearest && nd < perception) {
+    if (nearest && nd < foodDetectionRadius) {
       f.state = "seek"; f.targetPellet = nid;
-    } else if (w.aiming && Math.hypot(f.x - w.aim.x, f.y - w.aim.y) < perception * 1.3) {
+    } else if (w.aiming && Math.hypot(f.x - w.aim.x, f.y - w.aim.y) < aimDetectionRadius) {
       f.state = "curious";
     } else if (f.state !== "wander") {
       f.state = "wander";
@@ -115,7 +131,7 @@ export function stepFishSim(world: SimWorld, dt: number, nowMs: number): void {
       if (f.legT <= 0) {
         if (Math.random() < 0.3) {
           f.legSpeed = 0;
-          f.legT = 2.8 + Math.random() * 3.6;
+          f.legT = 5.5 + Math.random() * 5.5;
           f.legDir = f.heading + (Math.random() - 0.5) * 0.5;
           f.resting = true;
         } else {
@@ -135,7 +151,7 @@ export function stepFishSim(world: SimWorld, dt: number, nowMs: number): void {
       frenzy = true;
       const base = Math.atan2(nearest.y - f.y, nearest.x - f.x);
       desired = base + Math.sin(now * 0.021 + f.seed * 7) * 0.85;
-      const ndNorm = nd / perception;
+      const ndNorm = nd / foodDetectionRadius;
       const dash = 168 + 70 * f.burst + 60 * (1 - ndNorm);
       targetSpeed = dash * w.u * (nd < f.len * 0.55 ? 0.3 : 1);
       turnRate = 4.4;
@@ -209,7 +225,9 @@ export function stepFishSim(world: SimWorld, dt: number, nowMs: number): void {
     if (nearest && nd < f.len * 0.4) {
       nearest.eaters += 1;
       if (f.eatT <= 0) {
-        f.eatT = 0.62;
+        // Keep the one-shot eating animation alive long enough to reach its
+        // final (original third-to-last) frame after the pellet disappears.
+        f.eatT = ANIMS.eat.frames / ANIMS.eat.fps;
         nearest.food -= EAT_RATE;
         if (nearest.throwId !== f.lastThrow) {
           f.lastThrow = nearest.throwId;
@@ -242,10 +260,10 @@ export function stepFishSim(world: SimWorld, dt: number, nowMs: number): void {
     }
     if (f.turnT > 0) f.turnT -= dt; else f.turning = 0;
     const aimD = Math.hypot(w.aim.x - f.x, w.aim.y - f.y);
-    if (f.state === "seek" && nearest && nd < f.len * 0.9) f.anim = "eat";
-    else if (f.state === "seek" && nearest && nd < f.len * 2.6) f.anim = "bob";
+    if (f.eatT > 0) f.anim = "eat";
+    else if (f.state === "seek" && nearest && nd < f.len * SEEK_BOB_RADIUS) f.anim = "bob";
     else if (f.state === "seek") f.anim = "fast";
-    else if (f.state === "curious" && aimD < f.len * 2.4) f.anim = "bob";
+    else if (f.state === "curious" && aimD < f.len * CURIOUS_BOB_RADIUS) f.anim = "bob";
     else if (f.turning !== 0) f.anim = f.turning === 1 ? "turnR" : "turnL";
     else if (f.speed < 22 * w.u) f.anim = "idle";
     else f.anim = "swim";

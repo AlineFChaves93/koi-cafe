@@ -20,8 +20,17 @@ npm run build      # dist/ estático (deployável em qualquer host estático)
 ```
 
 Flags de desenvolvimento: `?autostart` pula a intro, `?cenacompleta` monta o
-lago com todas as peças. Hooks de debug no console: `__koiFish()` (estado do
-cardume) e `__koiStep(dt)` (avança a simulação manualmente).
+lago com todas as peças em uma sessão de pré-visualização que nunca altera o
+save. Hooks de debug no console: `__koiFish()` (estado do cardume),
+`__koiStep(dt)` (avança a simulação manualmente) e `__koiFrame()` (roda um
+quadro completo de update+render sem depender de rAF, para abas em segundo
+plano).
+
+O mundo do Phaser usa uma resolução lógica fixa de **1280×720 (16:9)**.
+`Phaser.Scale.FIT` mantém esse mesmo mundo e a casca de HUD usa a mesma escala
+uniforme para apresentar a superfície inteira; redimensionar a janela nunca
+recalcula posições, tamanhos, colisões ou velocidades da simulação. Em
+celulares, o jogo orienta o jogador a usar a tela na horizontal.
 
 ## Mapa do código
 
@@ -74,6 +83,9 @@ de crescimento, recompensas diárias, planos da loja). As regras puras em
 **Save:** `koi-cafe-player-v4` no localStorage (peixes nomeados
 `{variant, progress, sick}`, cenário comprado, carteira). O v3 legado
 (arranjos posicionais) é migrado automaticamente no primeiro carregamento.
+Cada navegador e origem (`localhost`, `127.0.0.1`, produção) mantém um save
+separado; use `?cenacompleta` quando precisar comparar todos os assets sem
+alterar nenhum deles.
 
 ## Assets e arte-fonte
 

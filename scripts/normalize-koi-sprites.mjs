@@ -12,7 +12,8 @@ const outputDirectory = path.join(projectRoot, "public/assets/koi");
 const atlases = [
   { filename: "platinum-ogon.png", sourceColumns: 12, expectedFrames: [8, 6, 12, 12, 12, 12] },
   { filename: "hi-utsuri-v2.png", sourceColumns: 10, expectedFrames: [8, 6, 10, 10, 10, 10] },
-  { filename: "showa-v3.png", sourceColumns: 10, expectedFrames: [8, 6, 10, 10, 10, 10] },
+  // Recolor do platinum (tools/make-yamabuki.py); mesmas grade e contagens.
+  { filename: "yamabuki-ogon.png", sourceColumns: 12, expectedFrames: [8, 6, 12, 12, 12, 12] },
   { filename: "sanke-v2.png", sourceColumns: 9, expectedFrames: [8, 5, 9, 9, 9, 9], pattern: "simple-sanke" },
   { filename: "kohaku.png", sourceColumns: 10, expectedFrames: [7, 5, 10, 10, 10, 10] },
   { filename: "tancho.png", sourceColumns: 12, expectedFrames: [8, 6, 12, 12, 12, 12] },
@@ -316,4 +317,8 @@ async function normalizeAtlas({ filename, expectedFrames, sourceColumns, pattern
 }
 
 await fs.mkdir(outputDirectory, { recursive: true });
-for (const atlas of atlases) console.log(await normalizeAtlas(atlas));
+// Argumentos opcionais filtram por nome de arquivo (ex.: `npm run sprites:normalize -- yamabuki-ogon`).
+const only = process.argv.slice(2);
+const selected = only.length ? atlases.filter((atlas) => only.some((name) => atlas.filename.includes(name))) : atlases;
+if (selected.length === 0) throw new Error(`No atlas matches: ${only.join(", ")}`);
+for (const atlas of selected) console.log(await normalizeAtlas(atlas));

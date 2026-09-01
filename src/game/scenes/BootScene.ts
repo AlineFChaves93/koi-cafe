@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { ATLAS_COLUMNS, animsForVariant } from "../data/animations";
-import { BASIN_POUR_FRAMES, SCENERY } from "../data/scenery";
+import { SCENERY } from "../data/scenery";
 import { KOI_VARIANTS } from "../data/variants";
 
 export const CHAR_KEYS = {
@@ -12,11 +12,12 @@ export const CHAR_KEYS = {
 } as const;
 
 export const WATER_KEY = "water-bg";
+export const COIN_KEY = "coin";
 export const PELLET_TEXTURES = { comum: "pellet", premium: "pellet-premium" } as const;
 
 // Boot loads the asset manifest, converts each koi atlas into a spritesheet,
 // registers the animation sets and generates the small procedural textures
-// (pellets, splash rings, waterfall bits). PondScene starts fully loaded.
+// (pellets, splash bits, ripple). PondScene starts fully loaded.
 export class BootScene extends Phaser.Scene {
   constructor() {
     super("Boot");
@@ -33,10 +34,9 @@ export class BootScene extends Phaser.Scene {
 
     for (const variant of KOI_VARIANTS) this.load.image(`koi-${variant.key}-img`, variant.file);
     for (const item of SCENERY) this.load.image(`scenery-${item.id}`, item.src);
-    for (const frame of [...BASIN_POUR_FRAMES, "03", "07", "08", "09", "10"]) {
-      this.load.image(`basin-${frame}`, `/assets/scenery/basin-water/frame-${frame}.png`);
-    }
     this.load.image(CHAR_KEYS.bench, "/assets/character/bench.png");
+    // O remédio voa como item; a ração usa os pellets procedurais abaixo.
+    this.load.image("icon-remedio", "/assets/icons/remedio.png");
     this.load.image(CHAR_KEYS.boySitLeft, "/assets/character/boy-sit-left.png");
     this.load.image(CHAR_KEYS.boySitRight, "/assets/character/boy-sit-right.png");
     this.load.image(CHAR_KEYS.boyThrowLeft, "/assets/character/boy-throw-left.png");
@@ -73,16 +73,6 @@ export class BootScene extends Phaser.Scene {
   }
 
   private generateTextures(): void {
-    const pellet = (key: string, color: number) => {
-      const g = this.add.graphics();
-      g.fillStyle(color, 1);
-      g.fillCircle(4, 4, 3);
-      g.generateTexture(key, 8, 8);
-      g.destroy();
-    };
-    pellet(PELLET_TEXTURES.comum, 0x5c4033);
-    pellet(PELLET_TEXTURES.premium, 0xd9a13c);
-
     const ring = (key: string, color: number, alpha: number) => {
       const g = this.add.graphics();
       g.lineStyle(2, color, alpha);
@@ -103,52 +93,25 @@ export class BootScene extends Phaser.Scene {
     drop("splash-drop", 0xffffff);
     drop("splash-drop-grow", 0x9fd6b9);
 
-    // Waterfall jet: gradient clipped to the spout polygon (ported from the
-    // previous CSS .fx-water element).
-    const jet = this.textures.createCanvas("fx-jet", 64, 256);
-    if (jet) {
-      const ctx = jet.getContext();
-      const gradient = ctx.createLinearGradient(0, 0, 64, 0);
-      gradient.addColorStop(0, "rgba(255,255,255,0)");
-      gradient.addColorStop(0.12, "rgba(255,255,255,0)");
-      gradient.addColorStop(0.28, "rgba(222,249,255,0.75)");
-      gradient.addColorStop(0.43, "rgba(139,211,229,0.18)");
-      gradient.addColorStop(0.57, "rgba(255,255,255,0.82)");
-      gradient.addColorStop(0.73, "rgba(121,195,218,0.12)");
-      gradient.addColorStop(0.9, "rgba(255,255,255,0)");
-      gradient.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.save();
+    // Grão de ração: bolinha com sombreamento radial — marrom na comum,
+    // dourada na premium (as cores dos grãos da arte dos potes).
+    const pellet = (key: string, base: string, rim: string, shine: string) => {
+      const s = 14;
+      const tex = this.textures.createCanvas(key, s, s);
+      if (!tex) return;
+      const ctx = tex.getContext();
+      const g = ctx.createRadialGradient(s * 0.38, s * 0.34, 0.5, s * 0.5, s * 0.5, s * 0.5);
+      g.addColorStop(0, shine);
+      g.addColorStop(0.6, base);
+      g.addColorStop(1, rim);
+      ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.moveTo(64 * 0.4, 0);
-      ctx.lineTo(64 * 0.88, 0);
-      ctx.lineTo(64 * 0.72, 256);
-      ctx.lineTo(64 * 0.05, 256);
-      ctx.closePath();
-      ctx.clip();
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, 64, 256);
-      ctx.restore();
-      jet.refresh();
-    }
-
-    // Impact glow (radial gradient ellipse).
-    const impact = this.textures.createCanvas("fx-impact", 64, 32);
-    if (impact) {
-      const ctx = impact.getContext();
-      const gradient = ctx.createRadialGradient(32, 16, 1, 32, 16, 30);
-      gradient.addColorStop(0, "rgba(255,255,255,0.8)");
-      gradient.addColorStop(0.18, "rgba(207,244,249,0.48)");
-      gradient.addColorStop(0.62, "rgba(207,244,249,0)");
-      gradient.addColorStop(1, "rgba(207,244,249,0)");
-      ctx.save();
-      ctx.translate(32, 16);
-      ctx.scale(1, 0.5);
-      ctx.translate(-32, -16);
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, 64, 32);
-      ctx.restore();
-      impact.refresh();
-    }
+      ctx.arc(s / 2, s / 2, s / 2 - 0.5, 0, Math.PI * 2);
+      ctx.fill();
+      tex.refresh();
+    };
+    pellet(PELLET_TEXTURES.comum, "#8a5a2b", "#55351a", "#c99a62");
+    pellet(PELLET_TEXTURES.premium, "#c08a33", "#7c5210", "#f3d795");
 
     // Ripple ring.
     const ripple = this.textures.createCanvas("fx-ripple", 128, 64);
@@ -160,6 +123,37 @@ export class BootScene extends Phaser.Scene {
       ctx.ellipse(64, 32, 62, 30, 0, 0, Math.PI * 2);
       ctx.stroke();
       ripple.refresh();
+    }
+
+    // Moeda: disco dourado com borda cunhada e anel interno em relevo (as
+    // cores da carteira). Nas views ele é desenhado achatado no plano da
+    // água — nunca como texto/glifo.
+    const coin = this.textures.createCanvas(COIN_KEY, 64, 64);
+    if (coin) {
+      const ctx = coin.getContext();
+      const s = 64;
+      const face = ctx.createRadialGradient(s * 0.38, s * 0.32, 2, s * 0.5, s * 0.5, s * 0.5);
+      face.addColorStop(0, "#ffe9bd");
+      face.addColorStop(0.55, "#efb866");
+      face.addColorStop(1, "#b07a1e");
+      ctx.fillStyle = face;
+      ctx.beginPath();
+      ctx.arc(s / 2, s / 2, s / 2 - 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#8a5c12";
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      // anel interno em relevo: sombra deslocada para baixo, luz para cima
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "rgba(122, 79, 12, 0.55)";
+      ctx.beginPath();
+      ctx.arc(s / 2, s / 2 + 1.5, s * 0.3, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(255, 240, 200, 0.65)";
+      ctx.beginPath();
+      ctx.arc(s / 2, s / 2 - 1.5, s * 0.3, 0, Math.PI * 2);
+      ctx.stroke();
+      coin.refresh();
     }
   }
 }

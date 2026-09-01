@@ -2,7 +2,9 @@ import Phaser from "phaser";
 import { PELLET_TEXTURES } from "../scenes/BootScene";
 import type { FeedKind, WorldPellet } from "../types";
 
-export const PELLET_DEPTH = 28;
+// na superfície: acima dos peixes submersos (1), atrás de qualquer peça de
+// cenário (z ≥ 3) — o grão boia por baixo da margem, como a moeda
+export const PELLET_DEPTH = 2;
 
 export class PelletView {
   readonly sprite: Phaser.GameObjects.Sprite;

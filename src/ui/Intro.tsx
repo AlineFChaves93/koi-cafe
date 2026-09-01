@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { makeT, type Lang } from "@/game/i18n";
 
-export function Intro() {
+export function Intro({ lang }: { lang: Lang }) {
   const [intro, setIntro] = useState(true);
   const [leaving, setLeaving] = useState(false);
+  const t = makeT(lang);
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.search.includes("autostart")) {
@@ -20,23 +22,14 @@ export function Intro() {
 
   return (
     <div className={`intro ${leaving ? "leaving" : ""}`}>
-      <div className="intro-art" aria-hidden>
-        <img className="ia-koi ia-koi-a" src="/assets/koi/koi-hero.png" alt="" draggable={false} />
-        <img className="ia-koi ia-koi-b" src="/assets/koi/koi-hero.png" alt="" draggable={false} />
-        <img className="ia-koi ia-koi-c" src="/assets/koi/koi-hero.png" alt="" draggable={false} />
-        <img className="ia-koi ia-koi-d" src="/assets/koi/koi-hero.png" alt="" draggable={false} />
-        <img className="ia-boy" src="/assets/character/boy-idle.png" alt="" draggable={false} />
-      </div>
+      <div className="intro-art" aria-hidden />
       <div className="intro-panel">
         <small>CARP CAFÉ</small>
         <h1>Koi Café</h1>
         <p>
-          Mire perto de um peixe para alimentar só ele: 3 jogadas e ele vira MÉDIO, 10 e vira ADULTO — vendido
-          por ◎10. Jogar na água aberta alimenta o cardume (+4 jogadas). Cada espécie que chega a ADULTO entra
-          na sua coleção e libera novas peças na Loja do Lago: ponte, samambaia, fonte de bambu e mais!
+          {t("intro.text")}
         </p>
-        <button onClick={begin}>TOCAR PARA COMEÇAR</button>
-        <span>Sample de gameplay • venda de peixes, remédios, ração premium e cenário completo</span>
+        <button onClick={begin}>{t("intro.cta")}</button>
       </div>
     </div>
   );

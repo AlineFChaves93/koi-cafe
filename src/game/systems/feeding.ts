@@ -1,6 +1,6 @@
 // Feeding geometry: where a throw lands, which fish it targets and how the
 // pellet cloud scatters. Pure helpers used by the command handlers.
-import { PELLETS_PER_THROW, PELLET_FOOD, SICK_CHANCE } from "../data/economy";
+import { PELLETS_PER_THROW, PELLET_FOOD, THROWS_PER_SICKNESS } from "../data/economy";
 import type { Fish, SimWorld, WorldPellet } from "../types";
 import { TAU } from "../types";
 
@@ -36,7 +36,8 @@ export function scatterPellets(world: SimWorld, spot: { x: number; y: number }, 
   const ids: number[] = [];
   const aimed = w.throws.get(throwId)?.targetFid != null;
   const spread = Math.min(w.w, w.h) * (aimed ? 0.038 : 0.085);
-  for (let k = 0; k < PELLETS_PER_THROW; k++) {
+  const count = PELLETS_PER_THROW[feed];
+  for (let k = 0; k < count; k++) {
     const id = w.nextId++;
     const ang = Math.random() * TAU;
     const dist = k === 0 ? 0 : spread * Math.sqrt(Math.random());
@@ -45,7 +46,7 @@ export function scatterPellets(world: SimWorld, spot: { x: number; y: number }, 
     const d = Math.hypot(dx, dy) || 1;
     const minD = w.platform.r * 1.1 + 14;
     if (d < minD) {
-      const ringAng = Math.atan2(dy, dx) + (k - (PELLETS_PER_THROW - 1) / 2) * 0.18;
+      const ringAng = Math.atan2(dy, dx) + (k - (count - 1) / 2) * 0.18;
       px = { x: w.platform.x + Math.cos(ringAng) * minD, y: w.platform.y + Math.sin(ringAng) * minD };
     }
     px = {
@@ -58,9 +59,10 @@ export function scatterPellets(world: SimWorld, spot: { x: number; y: number }, 
   return ids;
 }
 
-// peixes podem adoecer: param de crescer até receberem remédio (◎5)
-export function rollSickness(world: SimWorld, random: () => number = Math.random): Fish | null {
-  if (random() >= SICK_CHANCE) return null;
+// A cada 4 arremessos de ração comum um peixe adoece — independentemente de
+// estar baby, médio ou grande. O sorteio só escolhe a vítima entre os saudáveis.
+export function sicknessVictim(world: SimWorld, random: () => number = Math.random): Fish | null {
+  if (world.comumThrows === 0 || world.comumThrows % THROWS_PER_SICKNESS !== 0) return null;
   const healthy = world.fishes.filter((f) => !f.sick);
   if (!healthy.length) return null;
   return healthy[Math.floor(random() * healthy.length)];

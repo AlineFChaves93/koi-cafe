@@ -1,74 +1,97 @@
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { ECONOMY, PREMIUM_PRICE } from "@/game/data/economy";
 import { gameBus, type PlayerSnapshot } from "@/game/events";
-import { KOI_VARIANTS } from "@/game/data/variants";
+import { makeT } from "@/game/i18n";
+import { medPriceFor, sceneryLevelOf } from "@/game/systems/economy";
+import type { FeedChoice } from "@/game/types";
+
+// cartão-ícone do protótipo: arte + bolinha de quantidade + dica no toque.
+// Um toque apenas ESCOLHE o item — o arremesso é sempre do botão central.
+function ItemCard({
+  icon, label, hint, count, active, onPick,
+}: {
+  icon: string; label: string; hint: string; count: string; active?: boolean;
+  onPick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`item-card ${active ? "active" : ""}`}
+      onClick={onPick}
+      aria-pressed={active}
+      aria-label={`${label} — ${hint}`}
+    >
+      <span className="tip" role="tooltip">
+        <b>{label}</b>
+        <small>{hint}</small>
+      </span>
+      <img src={icon} alt="" draggable={false} />
+      <i className="ball">{count}</i>
+    </button>
+  );
+}
 
 export function BottomConsole({
-  state, message, isAiming, onAimStart, onOpenStore, onOpenShop,
+  state, isAiming, onAimStart, onOpenStore, onOpenShop,
 }: {
   state: PlayerSnapshot;
-  message: string;
   isAiming: boolean;
   onAimStart: (event: ReactPointerEvent<HTMLButtonElement>) => void;
   onOpenStore: () => void;
   onOpenShop: () => void;
 }) {
-  const level = Math.floor(state.xp / ECONOMY.wallet.xpPerLevel) + 1;
+  const level = sceneryLevelOf(state.bought);
+  const medPrice = medPriceFor(state.bought);
   const emit = gameBus.commands;
+  const pick = (feed: FeedChoice) => emit.emit("set-feed", { feed });
+  const t = makeT(state.idioma);
 
   return (
     <div className="bottom-console">
-      <div className="daily-ration">
-        <div className="ration-ring" style={{ "--ration": "100%" } as React.CSSProperties}>
-          <strong>{state.feedSel === "premium" ? `×${state.premiumCount}` : "∞"}</strong>
-          <span>{state.feedSel === "premium" ? "prem." : "comum"}</span>
-        </div>
-        <p>
-          <strong>{state.feedSel === "premium" ? "Ração premium" : "Ração comum"}</strong>
-          <small>{state.feedSel === "premium" ? "2/7 jogadas • ◎30" : "grátis • 3/10 jogadas"}</small>
-        </p>
+      <div className="item-row">
+        <ItemCard
+          icon="/assets/supplies/feed-handful.webp"
+          label={t("feed.common")}
+          hint={t("feed.commonHint")}
+          count={Number.isFinite(state.food) ? `×${state.food}` : "∞"}
+          active={state.feedSel === "comum"}
+          onPick={() => pick("comum")}
+        />
+        <ItemCard
+          icon="/assets/supplies/premium-feed.webp"
+          label={t("feed.premium")}
+          hint={t("feed.premiumHint")}
+          count={`×${state.premiumCount}`}
+          active={state.feedSel === "premium"}
+          onPick={() => pick("premium")}
+        />
+        <ItemCard
+          icon="/assets/supplies/remedy-bottle.webp"
+          label={t("feed.medicine")}
+          hint={t("feed.medicineHint", { price: medPrice })}
+          count={`×${state.remedios}`}
+          active={state.feedSel === "remedio"}
+          onPick={() => pick("remedio")}
+        />
       </div>
+
       <div className="feed-control">
-        <p>{message}</p>
-        <div className="feed-chips">
-          <button
-            className={`feed-chip ${state.feedSel === "comum" ? "active" : ""}`}
-            onClick={() => emit.emit("set-feed", { feed: "comum" })}
-          >
-            COMUM ∞
-          </button>
-          <button
-            className={`feed-chip ${state.feedSel === "premium" ? "active" : ""}`}
-            onClick={() => emit.emit("set-feed", { feed: "premium" })}
-          >
-            PREMIUM ×{state.premiumCount} <b>◎{PREMIUM_PRICE}</b>
-          </button>
-          <button className="feed-chip add" onClick={() => emit.emit("buy-premium")} aria-label="Comprar mais ração premium">+1</button>
-        </div>
-        <button className="aim-button" onPointerDown={onAimStart} aria-pressed={isAiming}>
-          <span>✦</span>{isAiming ? "ARRASTE A MIRA…" : "SEGURE PARA ALIMENTAR"}
+        <button
+          className={`aim-button ${state.feedSel === "remedio" ? "remedy" : ""}`}
+          onPointerDown={onAimStart}
+          aria-pressed={isAiming}
+        >
+          <span>✦</span>
+          <b>{isAiming ? t("aim.drag") : state.feedSel === "remedio" ? t("aim.holdToMedicate") : t("aim.holdToFeed")}</b>
         </button>
       </div>
       <button className="store-button" onClick={onOpenStore}>
-        <span>♢</span><div><strong>LOJA KOI</strong><small>Pacotes e Clube</small></div><b>›</b>
+        <strong>{t("store.koiStore")}</strong>
       </button>
-      <button className="lago-btn" onClick={onOpenShop}>
-        <span className="lago-flower">✿</span>
-        <b>LAGO</b>
-        <i className="lago-badge">{state.collection.length}/{KOI_VARIANTS.length}★</i>
+      <button className="lago-btn" onClick={onOpenShop} aria-label={t("store.lakeAria", { level })}>
+        <i className="lago-level" aria-hidden>{level}</i>
+        <b>{t("store.lake")}</b>
       </button>
 
-      <div className="console-info">
-        <span className="chip">★ {state.streak} {state.streak === 1 ? "dia" : "dias"}</span>
-        <span className="chip">Missão {state.missionFed}/{ECONOMY.mission.goal}</span>
-        <span className="chip">Nível {level}</span>
-        {state.missionFed >= ECONOMY.mission.goal && !state.missionClaimed && (
-          <button className="chip claim" onClick={() => emit.emit("claim-mission")}>RESGATAR MISSÃO +{ECONOMY.mission.rewardCoins}</button>
-        )}
-        {!state.rewardClaimed && (
-          <button className="chip claim" onClick={() => emit.emit("claim-daily")}>SEQUÊNCIA +{ECONOMY.dailyReward.coins}</button>
-        )}
-      </div>
     </div>
   );
 }

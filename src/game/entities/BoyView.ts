@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { BOY_LAYOUT, PLATFORM_LAYOUT, PLATFORM_X_PCT } from "../data/scenery";
+import { BOY_LAYOUT, PLATFORM_LAYOUT, PLATFORM_X_PCT, sceneWidthFor } from "../data/scenery";
 import { CHAR_KEYS } from "../scenes/BootScene";
 import type { Disc } from "../types";
 
@@ -22,7 +22,7 @@ export class BoyView {
 
   layout(W: number, H: number): void {
     const spec = PLATFORM_LAYOUT.find((s) => W <= s.maxW) ?? PLATFORM_LAYOUT[PLATFORM_LAYOUT.length - 1];
-    const size = Math.min(spec.vw * W, spec.max);
+    const size = Math.min(spec.vw * sceneWidthFor(W, H), spec.max);
     this.platform.x = (PLATFORM_X_PCT / 100) * W;
     this.platform.y = (spec.topPct / 100) * H;
     this.platform.r = size / 2;
@@ -45,6 +45,11 @@ export class BoyView {
 
   private frame = { left: 0, top: 0, size: 0 };
 
+  // leitura para os debug hooks da cena (ex.: __koiBoy)
+  get pose(): { side: "left" | "right"; throwing: boolean } {
+    return { side: this.side, throwing: this.throwing };
+  }
+
   setSide(side: "left" | "right"): void {
     if (this.side === side) return;
     this.side = side;
@@ -59,6 +64,16 @@ export class BoyView {
       this.throwing = false;
       this.applyPose();
     });
+  }
+
+  // Ponto visual da mão estendida na pose de arremesso. Mantém o projétil
+  // preso ao personagem no mesmo sistema de coordenadas do mundo Phaser.
+  getThrowOrigin(): { x: number; y: number } {
+    const direction = this.side === "left" ? -1 : 1;
+    return {
+      x: this.platform.x + direction * this.platform.r * 0.72,
+      y: this.platform.y - this.platform.r * 0.38,
+    };
   }
 
   private applyPose(): void {
