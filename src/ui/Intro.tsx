@@ -22,7 +22,16 @@ export function Intro({ lang }: { lang: Lang }) {
 
   return (
     <div className={`intro ${leaving ? "leaving" : ""}`}>
-      <div className="intro-art" aria-hidden />
+      <div className="intro-art" aria-hidden>
+        <img className="intro-bridge" src="/assets/scenery/bridge.png" alt="" />
+        <img className="intro-rocks" src="/assets/scenery/rocks-corner.png" alt="" />
+        <img className="intro-lilypad" src="/assets/scenery/lilypad.png" alt="" />
+        <span className="intro-koi intro-koi-a" />
+        <span className="intro-koi intro-koi-b" />
+        <span className="intro-koi intro-koi-c" />
+        <span className="intro-koi intro-koi-d" />
+        <span className="intro-koi intro-koi-e" />
+      </div>
       <div className="intro-panel">
         <small>CARP CAFÉ</small>
         <h1>Koi Café</h1>

@@ -560,24 +560,42 @@ button:focus-visible { outline: 2px solid #ffe2a8; outline-offset: 3px; }
 /* ---- intro splash ---- */
 .intro {
   position: absolute; inset: 0; z-index: 200; display: grid; place-items: start center; overflow: hidden; padding: clamp(18px, 3.5cqh, 36px) 18px 24px;
-  background: #0a2e3c;
+  background: #157f78;
   transition: opacity 0.45s ease;
 }
 .intro.leaving { opacity: 0; }
 .intro-art {
   position: absolute; inset: -2%; pointer-events: none;
-  background: url("/assets/intro/intro-cover-v5.png") center center / cover no-repeat;
-  animation: intro-cover-drift 14s ease-in-out infinite alternate;
+  overflow: hidden;
+  background: url("/assets/water/water-bg.jpg") center center / cover no-repeat;
+  animation: intro-water-drift 14s ease-in-out infinite alternate;
 }
 .intro-art:after {
-  content: ""; position: absolute; inset: 0;
-  background:
-    radial-gradient(ellipse at 50% 18%, rgba(5, 29, 34, 0.18) 0 16%, transparent 47%),
-    linear-gradient(180deg, rgba(5, 26, 32, 0.1) 0%, transparent 45%, rgba(4, 25, 31, 0.08) 100%);
+  content: ""; position: absolute; z-index: 3; inset: 0;
+  background: linear-gradient(180deg, rgba(5, 38, 42, 0.22), transparent 45%);
 }
-@keyframes intro-cover-drift {
+@keyframes intro-water-drift {
   from { transform: scale(1.01) translate3d(-0.35%, -0.25%, 0); }
-  to { transform: scale(1.055) translate3d(0.55%, 0.4%, 0); }
+  to { transform: scale(1.035) translate3d(0.35%, 0.25%, 0); }
+}
+.intro-bridge, .intro-rocks, .intro-lilypad { position: absolute; z-index: 1; user-select: none; }
+.intro-bridge { left: -6%; top: -14%; width: 39%; transform: rotate(-4deg); filter: drop-shadow(0 8px 8px rgba(5, 39, 38, 0.24)); }
+.intro-rocks { right: -5%; bottom: -17%; width: 25%; }
+.intro-lilypad { left: -3%; bottom: -18%; width: 24%; }
+.intro-koi {
+  position: absolute; z-index: 2; display: block; width: clamp(62px, 8.2cqw, 116px); aspect-ratio: 1;
+  background-repeat: no-repeat; background-position: 0 0; background-size: 1200% 600%;
+  filter: drop-shadow(0 6px 5px rgba(4, 52, 49, 0.32));
+  animation: intro-koi-drift 5.5s ease-in-out infinite alternate;
+}
+.intro-koi-a { left: 26%; top: 59%; background-image: url("/assets/koi/kohaku.webp"); --koi-angle: 32deg; }
+.intro-koi-b { left: 42%; top: 72%; background-image: url("/assets/koi/hi-utsuri-v2.webp"); --koi-angle: -24deg; animation-delay: -1.4s; }
+.intro-koi-c { left: 57%; top: 57%; background-image: url("/assets/koi/yamabuki-ogon.webp"); --koi-angle: 18deg; animation-delay: -2.6s; }
+.intro-koi-d { left: 69%; top: 72%; background-image: url("/assets/koi/sanke-v2.webp"); --koi-angle: -38deg; animation-delay: -3.8s; }
+.intro-koi-e { left: 80%; top: 48%; background-image: url("/assets/koi/platinum-ogon.webp"); --koi-angle: 42deg; animation-delay: -0.8s; }
+@keyframes intro-koi-drift {
+  from { transform: translate3d(-5px, 4px, 0) rotate(var(--koi-angle)); }
+  to { transform: translate3d(8px, -7px, 0) rotate(calc(var(--koi-angle) + 3deg)); }
 }
 .intro-panel {
   position: relative; z-index: 2; width: min(490px, 100%); padding: 0 6px; text-align: center; color: #fff;
@@ -599,7 +617,7 @@ button:focus-visible { outline: 2px solid #ffe2a8; outline-offset: 3px; }
 .intro-panel button:active { transform: translateY(4px) scale(0.98); box-shadow: 0 1px 0 var(--carrot-deep); }
 
 @media (prefers-reduced-motion: reduce) {
-  .intro-art { animation: none; }
+  .intro-art, .intro-koi { animation: none; }
   .console-info .chip.claim, .intro-panel button, .lock-badge, .aim-button span, .bucket-icon, .wallet-coins, .wallet-gain, .settings-pop { animation: none; }
   .intro { transition: none; }
 }
