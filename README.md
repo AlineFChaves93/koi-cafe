@@ -1,5 +1,7 @@
 # Koi Café
 
+![Capa do Koi Café com o lago e os peixes do jogo](public/assets/intro/intro-cover-gameplay-preview.png)
+
 Um jogo 2D de alimentar carpas visto de cima: mire perto de um peixe para
 alimentar só ele, cresça o cardume, colecione espécies e monte o lago na Loja
 do Lago.
