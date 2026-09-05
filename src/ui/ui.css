@@ -566,7 +566,7 @@ button:focus-visible { outline: 2px solid #ffe2a8; outline-offset: 3px; }
 .intro.leaving { opacity: 0; }
 .intro-art {
   position: absolute; inset: -2%; pointer-events: none;
-  background: url("/assets/intro/intro-cover-v3.png") center center / cover no-repeat;
+  background: url("/assets/intro/intro-cover-v4.png") center center / cover no-repeat;
   animation: intro-cover-drift 14s ease-in-out infinite alternate;
 }
 .intro-art:after {
