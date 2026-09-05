@@ -566,14 +566,14 @@ button:focus-visible { outline: 2px solid #ffe2a8; outline-offset: 3px; }
 .intro.leaving { opacity: 0; }
 .intro-art {
   position: absolute; inset: -2%; pointer-events: none;
-  background: url("/assets/intro/intro-cover-v4.png") center center / cover no-repeat;
+  background: url("/assets/intro/intro-cover-v5.png") center center / cover no-repeat;
   animation: intro-cover-drift 14s ease-in-out infinite alternate;
 }
 .intro-art:after {
   content: ""; position: absolute; inset: 0;
   background:
-    radial-gradient(ellipse at 50% 18%, rgba(5, 29, 34, 0.32) 0 16%, transparent 47%),
-    linear-gradient(180deg, rgba(5, 26, 32, 0.25) 0%, transparent 45%, rgba(4, 25, 31, 0.22) 100%);
+    radial-gradient(ellipse at 50% 18%, rgba(5, 29, 34, 0.18) 0 16%, transparent 47%),
+    linear-gradient(180deg, rgba(5, 26, 32, 0.1) 0%, transparent 45%, rgba(4, 25, 31, 0.08) 100%);
 }
 @keyframes intro-cover-drift {
   from { transform: scale(1.01) translate3d(-0.35%, -0.25%, 0); }
